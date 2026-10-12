@@ -35,6 +35,9 @@ export default function RootLayout({
             <main className="flex-1 overflow-hidden relative border-none outline-none">
               {children}
             </main>
+            <footer className="shrink-0 px-4 pt-1 pb-[calc(0.375rem+env(safe-area-inset-bottom))] text-center text-[11px] leading-4 text-muted-foreground/70">
+              Independent project, not affiliated with Avito.ma. Listings belong to their sellers and link to the original ads.
+            </footer>
           </div>
           <Analytics />
         </ThemeProvider>
