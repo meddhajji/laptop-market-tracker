@@ -17,7 +17,7 @@ export const LIMITS = {
 export type RateLimitResult = { ok: true } | { ok: false; reason: "visitor" | "global"; retryAfterSeconds: number };
 
 /** Visitors are counted by a salted hash, so no IP address is ever stored. */
-export function visitorKey(ip: string, salt: string = process.env.RATE_LIMIT_SALT ?? "avito-laptop-tracker"): string {
+export function visitorKey(ip: string, salt: string = process.env.RATE_LIMIT_SALT ?? "laptop-market-tracker"): string {
     return createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
 }
 

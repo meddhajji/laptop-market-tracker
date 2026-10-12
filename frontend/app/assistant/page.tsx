@@ -6,8 +6,8 @@ import type { UIMessage } from "ai";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ArrowDown, ArrowUp, Loader2, SquarePen, StopCircle } from "lucide-react";
-import { LaptopTable } from "@/components/avito/LaptopTable";
-import { ALL_COLUMNS } from "@/components/avito/Columns";
+import { LaptopTable } from "@/components/laptops/LaptopTable";
+import { ALL_COLUMNS } from "@/components/laptops/Columns";
 import type { Laptop } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -158,7 +158,7 @@ function ChatInput({
               if (canSubmit) onSubmit();
             }
           }}
-          placeholder="Ask AvitoPT"
+          placeholder="Ask the assistant"
           className="min-h-11 flex-1 resize-none bg-transparent px-3 py-3 text-[15px] leading-5 text-foreground outline-none placeholder:text-muted-foreground/45"
         />
         {isLoading ? (
@@ -343,14 +343,14 @@ const MessageItem = React.memo(function MessageItem({
 function loadSavedMessages(): ChatMessage[] {
   if (typeof window === "undefined") return [];
   try {
-    const saved = sessionStorage.getItem("avitopt_messages");
+    const saved = sessionStorage.getItem("assistant_messages");
     return saved ? JSON.parse(saved) : [];
   } catch {
     return [];
   }
 }
 
-export default function AvitoPTPage() {
+export default function AssistantPage() {
   const [inputValue, setInputValue] = useState("");
   const [visibleCols, setVisibleCols] = useState<Set<string>>(DEFAULT_VISIBLE);
   const [isNearBottom, setIsNearBottom] = useState(true);
@@ -373,9 +373,9 @@ export default function AvitoPTPage() {
 
   useEffect(() => {
     if (messages.length > 0) {
-      sessionStorage.setItem("avitopt_messages", JSON.stringify(messages));
+      sessionStorage.setItem("assistant_messages", JSON.stringify(messages));
     } else {
-      sessionStorage.removeItem("avitopt_messages");
+      sessionStorage.removeItem("assistant_messages");
     }
   }, [messages]);
 
@@ -494,7 +494,7 @@ export default function AvitoPTPage() {
           <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background via-background/95 to-transparent" />
           <div className="relative mx-auto max-w-[1100px] px-6 pt-3 pb-3 pointer-events-auto">
             <div className="flex items-baseline justify-between relative z-10">
-              <h1 className="text-2xl font-black tracking-tight drop-shadow-md">AvitoPT</h1>
+              <h1 className="text-2xl font-black tracking-tight drop-shadow-md">Assistant</h1>
 
               {hasMessages && (
                 <button
@@ -517,7 +517,7 @@ export default function AvitoPTPage() {
                 <div className="w-full max-w-[900px] text-center">
                   <h2 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">Find your laptop</h2>
                   <p className="mx-auto mt-3 max-w-xl text-[14px] leading-6 text-muted-foreground">
-                    Search by Brand, model, city, budget, or specs and the assistant will bring reliable items from the Avito laptops database.
+                    Search by Brand, model, city, budget, or specs and the assistant will bring reliable items from the laptops database.
                   </p>
                 </div>
               </div>
@@ -546,15 +546,15 @@ export default function AvitoPTPage() {
         <button
           type="button"
           onClick={() => scrollToLatest("smooth")}
-          className="fixed bottom-[calc(112px+env(safe-area-inset-bottom))] left-1/2 z-40 inline-flex -translate-x-1/2 items-center gap-2 rounded-xl border border-white/10 bg-zinc-950/90 px-3 py-2 text-[12px] font-medium text-foreground shadow-2xl backdrop-blur-xl transition hover:bg-zinc-900"
+          className="absolute bottom-28 left-1/2 z-40 inline-flex -translate-x-1/2 items-center gap-2 rounded-xl border border-white/10 bg-zinc-950/90 px-3 py-2 text-[12px] font-medium text-foreground shadow-2xl backdrop-blur-xl transition hover:bg-zinc-900"
         >
           <ArrowDown className="size-3.5" />
           Jump to latest
         </button>
       )}
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-28 bg-gradient-to-t from-background to-transparent" />
-      <div className="fixed inset-x-0 bottom-0 z-40 pb-[calc(0.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-28 bg-gradient-to-t from-background to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 z-40 pb-2 sm:pb-3">
         <div className={LANE_CLASS}>
           <ChatInput
             value={inputValue}

@@ -7,22 +7,22 @@
 #
 # Optional keys, read from a .env file next to this one or from your shell:
 #   GROQ_API_KEY     enables the chat assistant
-#   GEMINI_API_KEY   lets you run the pipeline against Avito:
+#   GEMINI_API_KEY   lets you run the pipeline against the live site:
 #                      docker compose run --rm pipeline python pipeline.py -p 5
 
-x-database-url: &database-url postgresql://avito:avito@db:5432/avito?sslmode=disable
+x-database-url: &database-url postgresql://laptops:laptops@db:5432/laptops?sslmode=disable
 
 services:
   db:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: avito
-      POSTGRES_PASSWORD: avito
-      POSTGRES_DB: avito
+      POSTGRES_USER: laptops
+      POSTGRES_PASSWORD: laptops
+      POSTGRES_DB: laptops
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U avito -d avito"]
+      test: ["CMD-SHELL", "pg_isready -U laptops -d laptops"]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -64,4 +64,4 @@ services:
         condition: service_completed_successfully
 
 volumes:
-  db-data:
+  pgdata:

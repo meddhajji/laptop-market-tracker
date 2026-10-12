@@ -16,10 +16,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 // Modularized components
-import { FilterDialog } from "@/components/avito/FilterDialog";
-import { LaptopTable } from "@/components/avito/LaptopTable";
-import { Pagination } from "@/components/avito/Pagination";
-import { ALL_COLUMNS } from "@/components/avito/Columns";
+import { FilterDialog } from "@/components/laptops/FilterDialog";
+import { LaptopTable } from "@/components/laptops/LaptopTable";
+import { Pagination } from "@/components/laptops/Pagination";
+import { ALL_COLUMNS } from "@/components/laptops/Columns";
 
 const PAGE_SIZE = 12;
 
@@ -99,7 +99,7 @@ function parseFiltersFromURL(params: URLSearchParams): Filters {
     };
 }
 
-export default function AvitoDashboard({
+export default function LaptopDashboard({
     dataPromise,
     statsPromise
 }: {
@@ -130,13 +130,13 @@ export default function AvitoDashboard({
 
     // Always save current state, even if empty, so "clearing" persists across navigation
     useEffect(() => {
-        sessionStorage.setItem("avito_dashboard_params", paramsString);
+        sessionStorage.setItem("dashboard_params", paramsString);
     }, [paramsString]);
 
     // Restore state on mount if no params are present
     useEffect(() => {
         if (!searchParams.toString()) {
-            const saved = sessionStorage.getItem("avito_dashboard_params");
+            const saved = sessionStorage.getItem("dashboard_params");
             if (saved) {
                 startTransition(() => {
                     router.replace("?" + saved);
@@ -247,12 +247,12 @@ export default function AvitoDashboard({
                     onClick={() => {
                         setSearchInput("");
                         setDraftFilters(parseFiltersFromURL(new URLSearchParams()));
-                        router.push("/avito");
+                        router.push("/");
                     }}
                     className="cursor-pointer hover:opacity-70 transition-opacity active:scale-95 select-none"
                     title="Reset all filters"
                 >
-                    <h1 className="text-2xl font-black tracking-tight">Avito Laptops</h1>
+                    <h1 className="text-2xl font-black tracking-tight">Laptops</h1>
                 </div>
 
                     {/* Stats row */}
@@ -302,7 +302,7 @@ export default function AvitoDashboard({
                     </Select>
                     <Dialog open={filterOpen} onOpenChange={setFilterOpen}>
                         <DialogTrigger
-                            id="avito-filters-trigger"
+                            id="filters-trigger"
                             render={
                                 <Button variant="outline" className="flex-1 sm:flex-none sm:w-[87px] shrink-0 justify-center">
                                     Filters

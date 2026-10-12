@@ -3,59 +3,59 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Github, Mail, Linkedin } from "lucide-react";
+import { BotMessageSquare, Github, LayoutDashboard } from "lucide-react";
+
+const iconButton =
+    "rounded-md p-2 border border-transparent transition-all duration-300 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.08] hover:backdrop-blur-md hover:border-black/5 dark:hover:border-white/10";
 
 export function Navbar() {
     const pathname = usePathname();
-    // We read these from session storage dynamically so the links update 
-    // when filters are changed in the dashboards.
+    // Read from session storage on each render so the dashboard link brings
+    // back the filters the visitor last used.
     const getStoredParams = (key: string) => {
         if (typeof window === "undefined") return "";
         const saved = sessionStorage.getItem(key);
         return saved ? "?" + saved : "";
     };
 
-    const avitoParams = getStoredParams("avito_dashboard_params");
-
-
     const links = [
-        { href: "/avito" + (pathname !== "/avito" ? avitoParams : ""), label: "Avito" },
-        { href: "/avitopt", label: "AvitoPT" },
+        { path: "/", href: "/" + (pathname !== "/" ? getStoredParams("dashboard_params") : ""), label: "Dashboard", icon: LayoutDashboard },
+        { path: "/assistant", href: "/assistant", label: "AI assistant", icon: BotMessageSquare },
     ];
 
     return (
         <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-                <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-1">
-                        {links.map((link) => (
-                            <Link
-                                key={link.label}
-                                href={link.href}
-                                suppressHydrationWarning
-                                className={cn(
-                                    "rounded-md px-3 py-1.5 text-sm transition-all duration-300 border border-transparent",
-                                    pathname === link.href
-                                        ? "bg-zinc-900/10 dark:bg-white/15 text-zinc-900 dark:text-zinc-100 font-medium shadow-sm backdrop-blur-md border-black/5 dark:border-white/10"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.08] hover:backdrop-blur-md hover:border-black/5 dark:hover:border-white/10"
-                                )}
-                            >
-                                {link.label}
-                            </Link>
-                        ))}
-                    </div>
+                <div className="flex items-center gap-1">
+                    {links.map(({ path, href, label, icon: Icon }) => (
+                        <Link
+                            key={path}
+                            href={href}
+                            aria-label={label}
+                            title={label}
+                            aria-current={pathname === path ? "page" : undefined}
+                            suppressHydrationWarning
+                            className={cn(
+                                iconButton,
+                                pathname === path
+                                    ? "bg-zinc-900/10 dark:bg-white/15 text-zinc-900 dark:text-zinc-100 shadow-sm backdrop-blur-md border-black/5 dark:border-white/10"
+                                    : "text-muted-foreground"
+                            )}
+                        >
+                            <Icon className="size-[18px]" />
+                        </Link>
+                    ))}
                 </div>
-                <div className="flex items-center gap-1 text-muted-foreground">
-                    <a href="https://github.com/meddhajji/avito-laptops" target="_blank" rel="noopener noreferrer" className="p-2 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.08] hover:backdrop-blur-md border border-transparent hover:border-black/5 dark:hover:border-white/10 transition-all duration-300">
-                        <Github className="size-4" />
-                    </a>
-                    <a href="https://www.linkedin.com/in/mohamed-hajji-301330282" target="_blank" rel="noopener noreferrer" className="p-2 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.08] hover:backdrop-blur-md border border-transparent hover:border-black/5 dark:hover:border-white/10 transition-all duration-300">
-                        <Linkedin className="size-4" />
-                    </a>
-                    <a href="mailto:Mohamed.hajji@emines.um6p.ma" className="p-2 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.08] hover:backdrop-blur-md border border-transparent hover:border-black/5 dark:hover:border-white/10 transition-all duration-300">
-                        <Mail className="size-4" />
-                    </a>
-                </div>
+                <a
+                    href="https://github.com/meddhajji/laptop-market-tracker"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Source code on GitHub"
+                    title="Source code on GitHub"
+                    className={cn(iconButton, "text-muted-foreground")}
+                >
+                    <Github className="size-[18px]" />
+                </a>
             </nav>
         </header>
     );

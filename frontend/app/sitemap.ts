@@ -5,13 +5,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const baseUrl = siteUrl();
     return [
         {
-            url: `${baseUrl}/avito`,
+            url: `${baseUrl}/`,
             lastModified: new Date(),
             changeFrequency: "daily",
             priority: 1,
         },
         {
-            url: `${baseUrl}/avitopt`,
+            url: `${baseUrl}/assistant`,
             lastModified: new Date(),
             changeFrequency: "daily",
             priority: 0.8,

@@ -1,12 +1,12 @@
-# Avito Laptop Tracker
+# Laptop Market Tracker
 
-[![CI](https://github.com/meddhajji/avito-laptops/actions/workflows/ci.yml/badge.svg)](https://github.com/meddhajji/avito-laptops/actions/workflows/ci.yml)
+[![CI](https://github.com/meddhajji/laptop-market-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/meddhajji/laptop-market-tracker/actions/workflows/ci.yml)
 
 **Live: [avlaptops.vercel.app](https://avlaptops.vercel.app)**
 
-Avito.ma is Morocco's largest classifieds site. Its laptop category holds about 24,000 listings written as free text in French, Arabic and Darija, with no structured specs, thousands of reposts, and prices that range from honest to absurd. Finding a good laptop there means reading hundreds of ads.
+Morocco's largest online marketplace lists about 24,000 laptops, in ads written as free text in French, Arabic and Darija, with no structured specs, thousands of reposts, and prices that range from honest to absurd. Finding a good laptop there means reading hundreds of ads.
 
-This project turns that category into a clean, queryable market:
+This project turns those ads into a clean, queryable market:
 
 - a **pipeline** that scrapes every listing each night, extracts the hardware specs with an LLM, removes the noise, and estimates what each laptop should cost;
 - a **dashboard** that shows every listing with its specs and how its price compares with the market;
@@ -32,7 +32,7 @@ Measured on the first complete run (October 2026):
 
 ```mermaid
 flowchart LR
-    A[Avito.ma] -->|scrape| B[Diff against database]
+    A[Marketplace listings] -->|scrape| B[Diff against database]
     B -->|new or changed| C[Staging queue]
     B -->|price change, sold, back on sale| G[(PostgreSQL)]
     C -->|batches of 50| D[Gemini: classify and extract specs]
@@ -52,7 +52,7 @@ The pipeline runs nightly on GitHub Actions, started by a Vercel Cron job. GitHu
 
 | Stage | What it does | The part that was hard |
 | --- | --- | --- |
-| **Scrape** | Reads the category page by page until Avito returns an empty one. | Knowing when a scrape is trustworthy. Pages are retried with backoff, and a scrape only counts as complete if the ads seen add up to 90% of the total Avito reports. A block page that renders as an empty list would otherwise look like the end of the category. |
+| **Scrape** | Reads the category page by page until the site returns an empty one. | Knowing when a scrape is trustworthy. Pages are retried with backoff, and a scrape only counts as complete if the ads seen add up to 90% of the total the site reports. A block page that renders as an empty list would otherwise look like the end of the category. |
 | **Diff** | Compares the scrape with the database: new, changed, repriced, gone, back. | Deciding a listing is sold. Listings shift between pages while a scrape runs, so a single miss proves nothing. A listing is marked sold only after a complete scrape, and only once it has been unseen for 36 hours. |
 | **Extract** | Sends listing text to Gemini, which classifies it and fills a typed schema. | Making an LLM dependable. Responses are schema-constrained and validated before anything is stored. Results are matched by ID, never by position. A listing that keeps failing is skipped instead of blocking the queue. Rejected listings are remembered so they are not paid for again every night. |
 | **Score** | Rates the hardware 0 to 1000 from CPU benchmarks, GPU tier, RAM, storage and screen. | Sellers write "i5 8ème" far more often than a model number. The scorer resolves a family and generation to the average of that generation's laptop chips. |
@@ -105,7 +105,7 @@ Two optional keys, set in a `.env` file next to `compose.yaml` or in your shell:
 | Variable | Enables |
 | --- | --- |
 | `GROQ_API_KEY` | the chat assistant |
-| `GEMINI_API_KEY` | running the pipeline against Avito: `docker compose run --rm pipeline python pipeline.py -p 5` |
+| `GEMINI_API_KEY` | running the pipeline against the live site: `docker compose run --rm pipeline python pipeline.py -p 5` |
 
 ## Running without Docker
 
@@ -135,7 +135,7 @@ cd pipeline && pip install -r requirements-dev.txt && TEST_DATABASE_URL=postgres
 cd frontend && npm test
 ```
 
-- **Pipeline:** 58 tests. Database tests run against a real PostgreSQL, each in its own throwaway schema. Avito and the LLM are replaced by fakes, so no network or API key is needed.
+- **Pipeline:** 58 tests. Database tests run against a real PostgreSQL, each in its own throwaway schema. The marketplace and the LLM are replaced by fakes, so no network or API key is needed.
 - **Web app:** 27 unit tests covering filter sanitizing, query building, request validation and rate limits.
 - **CI** ([`ci.yml`](.github/workflows/ci.yml)) runs both on every push, plus lint, type-check, a production build, and a smoke test that starts the whole Docker Compose stack and checks the dashboard serves listings.
 
@@ -156,8 +156,8 @@ pipeline/
   evaluate.py          Extraction accuracy against eval/golden.json
   tests/               pytest suite
 frontend/
-  app/avito/           Dashboard
-  app/avitopt/         Assistant
+  app/page.tsx         Dashboard (home page)
+  app/assistant/       Assistant
   app/api/chat/        Chat endpoint
   lib/chat/            Filters, query builder, rate limiter, model calls
 compose.yaml           One-command local stack
@@ -189,12 +189,14 @@ Row-level security is enabled on every table with no policies: the app and pipel
 ## Limits
 
 - The fair price is an estimate from asking prices, not sale prices, and it knows nothing about a laptop's physical condition. A typical estimate is within 15% of the asking price; treat smaller differences as noise.
-- Listing dates come from Avito's relative labels ("il y a 3 jours"), so they are approximate for older listings.
+- Listing dates come from the site's relative labels ("il y a 3 jours"), so they are approximate for older listings.
 - The assistant runs on free-tier model quotas and is capped at 400 conversations a day.
 
-## Scraping notes
+## Data source and disclaimer
 
-The scraper reads public listing pages at a limited rate and stores only listing content: title, description, price, city and link. Seller names and phone numbers are not stored, and every row links back to the original listing on Avito.
+The scraper reads public listing pages at a limited rate and stores only listing content: title, description, price, city and link. Seller names and phone numbers are not stored, and every row links back to the original ad.
+
+This is an independent project. It is not affiliated with, endorsed by or sponsored by Avito.ma, the marketplace whose public listings it indexes, and all trademarks belong to their owners.
 
 ## Contact
 

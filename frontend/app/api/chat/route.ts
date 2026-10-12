@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 45;
 
 /**
- * AvitoPT chat endpoint.
+ * Chat endpoint of the assistant.
  *
  *   1. validate the request and apply rate limits
  *   2. a model turns the question into structured filters (never SQL)
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     }
     if (!limit.ok) {
         const error = limit.reason === "global"
-            ? "The assistant has reached its daily capacity. It resets at midnight UTC; the Avito page still has every listing."
+            ? "The assistant has reached its daily capacity. It resets at midnight UTC; the dashboard still has every listing."
             : "You're sending messages too quickly. Please wait a little and try again.";
         return json(429, { error }, { "Retry-After": String(limit.retryAfterSeconds) });
     }
