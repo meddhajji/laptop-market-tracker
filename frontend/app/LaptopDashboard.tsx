@@ -362,6 +362,7 @@ export default function LaptopDashboard({
                     <p>
                         Specs extracted with Gemini
                         {lastUpdate && <> · Last updated {new Date(lastUpdate.created_at).toLocaleDateString("en-GB", { timeZone: "UTC" })}</>}
+                        {" "}· Not affiliated with Avito.ma
                     </p>
                 </div>
             </div>
