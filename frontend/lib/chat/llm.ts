@@ -1,4 +1,4 @@
-import { generateObject, streamText } from "ai";
+import { generateObject, smoothStream, streamText } from "ai";
 import { groq } from "@ai-sdk/groq";
 import { z } from "zod";
 import type { Laptop } from "@/lib/types";
@@ -26,6 +26,9 @@ export const interpretationSchema = z.object({
     follow_up: z.boolean().describe(
         "true if the message refines the previous search ('cheaper ones', 'same but in Rabat', 'only new'), so previous filters should be kept."
     ),
+    drop: z.array(z.string()).describe(
+        "Only for a follow-up: names of previous filters that no longer apply, e.g. ['gpu_type'] when a gaming search turns into a search for a Mac. Empty if they all still apply."
+    ),
     language: z.enum(["en", "fr", "ar"]).describe("Language of the message; 'ar' for Arabic or Darija."),
     goal: z.string().describe("What the shopper wants, in at most 12 plain English words."),
     filters: llmFiltersSchema,
@@ -42,7 +45,8 @@ Rules:
 - Use cases imply specs: gaming, 3D, video editing or machine learning -> gpu_type "Dedicated"; "for students" or office work imply nothing.
 - "cheap" / "pas cher" / "rkhis" -> sort_by "price", sort_order "asc". "best" / "most powerful" -> sort_by "score". "best deal" / "value for money" / "bon rapport qualité prix" -> sort_by "value".
 - A budget ("under 5000", "moins de 5000 dh") is price_max.
-- For a follow-up, return only what changes; previous filters are kept automatically.`;
+- For a follow-up, return only what changes; previous filters are kept automatically.
+- A follow-up can also change the subject: "a Mac instead" after a gaming search, "any brand" after a ThinkPad search. List in "drop" the previous filters that only described the old subject (search_terms, gpu_type, gpu, ram_min, refresh_rate_min...). Place and budget stay unless the shopper changes them.`;
 
 const SUMMARY_SYSTEM = `You are a shopping assistant for laptop listings in Morocco. A results table is shown to the user separately.
 
@@ -149,6 +153,8 @@ export async function streamSummary(
                 maxRetries: 0,
                 abortSignal: AbortSignal.timeout(SUMMARY_TIMEOUT_MS),
                 providerOptions: model.providerOptions,
+                // The model answers in one burst; this hands the words over at reading pace
+                experimental_transform: smoothStream({ delayInMs: 22 }),
             });
             // Errors arrive as stream parts rather than exceptions, so they are checked here
             for await (const part of result.fullStream) {

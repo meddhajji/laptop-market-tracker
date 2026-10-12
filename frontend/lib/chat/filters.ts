@@ -63,7 +63,7 @@ export const llmFiltersSchema = z.object({
 });
 
 // Words the model sometimes leaks into search_terms; they are filters or noise, not keywords
-const NON_KEYWORDS = /^(touchscreen|tactile|new|neuf|used|occasion|laptops?|pcs?|ordinateurs?|portables?|cheap|affordable|budget|gaming|best|good)$/i;
+const NON_KEYWORDS = /^(touchscreen|tactile|new|neuf|used|occasion|laptops?|pcs?|ordinateurs?|portables?|cheap|affordable|budget|gaming|gamers?|best|good)$/i;
 
 const text = (value: unknown, maxLength: number): string | undefined => {
     if (typeof value !== "string") return undefined;
@@ -126,7 +126,14 @@ export function cleanFilters(input: unknown): LaptopFilters {
     return Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== undefined)) as LaptopFilters;
 }
 
-/** A follow-up ("cheaper ones", "same but in Rabat") keeps the previous filters unless overridden. */
-export function mergeFilters(previous: LaptopFilters, next: LaptopFilters): LaptopFilters {
-    return { ...previous, ...next };
+/**
+ * A follow-up ("cheaper ones", "same but in Rabat") keeps the previous filters
+ * unless overridden. `drop` names the previous filters the new message made
+ * obsolete: after "a gaming laptop", "a Mac instead" must not keep the
+ * dedicated-GPU requirement.
+ */
+export function mergeFilters(previous: LaptopFilters, next: LaptopFilters, drop: unknown = []): LaptopFilters {
+    const dropped = new Set<unknown>(Array.isArray(drop) ? drop : []);
+    const kept = Object.fromEntries(Object.entries(previous).filter(([key]) => !dropped.has(key)));
+    return { ...kept, ...next };
 }

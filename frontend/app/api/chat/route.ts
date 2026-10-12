@@ -65,10 +65,12 @@ export async function POST(req: Request) {
                 say(offTopicReply(interpretation.language));
             } else {
                 const requested = cleanFilters(interpretation.filters);
-                const filters = interpretation.follow_up ? mergeFilters(lastFilters, requested) : requested;
+                const filters = interpretation.follow_up ? mergeFilters(lastFilters, requested, interpretation.drop) : requested;
+                const searchId = `search-${Date.now()}`;
+                // Sent before the query runs, so the page can show what was understood while it searches
+                writer.write({ type: "data-plan", id: `plan-${searchId}`, data: { filters } });
                 const { laptops, stats } = await runSearch(filters);
 
-                const searchId = `search-${Date.now()}`;
                 writer.write({ type: "data-laptops", id: `laptops-${searchId}`, data: laptops });
                 writer.write({ type: "data-search", id: searchId, data: { filters, stats } });
 

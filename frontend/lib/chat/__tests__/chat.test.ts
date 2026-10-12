@@ -40,6 +40,16 @@ describe("mergeFilters", () => {
         expect(mergeFilters({ search_terms: ["ThinkPad"], city: "Casablanca" }, { city: "Rabat", is_new: true }))
             .toEqual({ search_terms: ["ThinkPad"], city: "Rabat", is_new: true });
     });
+
+    it("drops the filters a change of subject made obsolete", () => {
+        const gaming = { city: "Settat", gpu_type: "Dedicated" as const, price_max: 9000 };
+
+        expect(mergeFilters(gaming, { search_terms: ["mac"] }, ["gpu_type"]))
+            .toEqual({ city: "Settat", price_max: 9000, search_terms: ["mac"] });
+        expect(mergeFilters(gaming, {}, "gpu_type")).toEqual(gaming);
+        expect(mergeFilters(gaming, { gpu_type: "Integrated" }, ["gpu_type", "nonsense"]))
+            .toEqual({ city: "Settat", price_max: 9000, gpu_type: "Integrated" });
+    });
 });
 
 describe("buildSearchQuery", () => {

@@ -76,6 +76,12 @@ const getSearchData = (part: MessagePart | null): SearchData | null => {
   return { filters: part.data.filters as LaptopFilters, stats: isRecord(part.data.stats) ? (part.data.stats as SearchStats) : {} };
 };
 
+/** Filters the server announced before running the query. */
+const getPlannedFilters = (message: ChatMessage): LaptopFilters | null => {
+  const part: MessagePart | undefined = message.parts?.find((candidate) => candidate.type === "data-plan");
+  return part && isRecord(part.data) && isRecord(part.data.filters) ? (part.data.filters as LaptopFilters) : null;
+};
+
 const getLaptops = (message: ChatMessage): Laptop[] => {
   const part: MessagePart | undefined = message.parts?.find((candidate) => candidate.type === "data-laptops");
   return Array.isArray(part?.data) ? (part.data as Laptop[]) : [];
@@ -190,11 +196,43 @@ function ChatInput({
   );
 }
 
-function LoadingLine({ children }: { children: React.ReactNode }) {
+/** Three dots, the way a person typing looks in any chat. */
+function TypingDots() {
   return (
-    <div className={cn(CONTENT_LANE_CLASS, "flex items-center gap-3 py-2 text-[13px] font-medium text-muted-foreground/70 animate-in fade-in duration-200")}>
-      <Loader2 className="size-3.5 animate-spin text-muted-foreground/50" />
-      <span>{children}</span>
+    <div className={cn(CONTENT_LANE_CLASS, "flex items-center gap-1.5 py-3 animate-in fade-in duration-300")} role="status" aria-label="Working on it">
+      {[0, 160, 320].map((delay) => (
+        <span
+          key={delay}
+          className="size-1.5 rounded-full bg-muted-foreground/60 animate-bounce"
+          style={{ animationDelay: `${delay}ms`, animationDuration: "1s" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Stands in for the results while the query runs, already saying what is being searched. */
+function SearchingPanel({ filters }: { filters: LaptopFilters }) {
+  return (
+    <div className={cn(CONTENT_LANE_CLASS, "animate-in fade-in slide-in-from-bottom-2 duration-300")}>
+      <div className="rounded-2xl border border-white/10 bg-white/[0.045] shadow-[0_20px_60px_rgba(0,0,0,0.32)] backdrop-blur-xl">
+        <div className="border-b border-white/10 px-4 py-3">
+          <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
+            <Loader2 className="size-3 animate-spin" />
+            Searching
+          </div>
+          <div className="mt-1 truncate text-[13px] text-muted-foreground">{formatFilters(filters, 0)}</div>
+        </div>
+        <div className="divide-y divide-white/[0.06]">
+          {[72, 58, 66, 50, 62].map((width, row) => (
+            <div key={row} className="flex items-center gap-4 px-4 py-3.5 animate-pulse" style={{ animationDelay: `${row * 120}ms` }}>
+              <div className="h-4 w-9 rounded bg-white/[0.07]" />
+              <div className="h-4 rounded bg-white/[0.07]" style={{ width: `${width}%` }} />
+              <div className="ml-auto h-4 w-16 rounded bg-white/[0.07]" />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -209,12 +247,7 @@ function ErrorLine({ message }: { message: string }) {
   );
 }
 
-type StreamPhase = "idle" | "reading" | "preparing";
-
-const PHASE_LABELS: Record<Exclude<StreamPhase, "idle">, string> = {
-  reading: "Searching the market...",
-  preparing: "Preparing answer...",
-};
+type StreamPhase = "idle" | "reading" | "searching" | "preparing";
 
 /** Pure function: derives the current loading phase from SDK status + last message parts. */
 const getStreamPhase = (status: string, messages: ChatMessage[]): StreamPhase => {
@@ -225,12 +258,13 @@ const getStreamPhase = (status: string, messages: ChatMessage[]): StreamPhase =>
   // Text has started streaming: no indicator needed
   if (getTextContent(lastMsg).length > 0) return "idle";
   // Results are on screen, the written summary is on its way
-  return getSearchPart(lastMsg) ? "preparing" : "reading";
+  if (getSearchPart(lastMsg)) return "preparing";
+  // The request is understood and the query is running: the message shows a placeholder panel
+  return getPlannedFilters(lastMsg) ? "searching" : "reading";
 };
 
 function StreamingIndicator({ phase }: { phase: StreamPhase }) {
-  if (phase === "idle") return null;
-  return <LoadingLine>{PHASE_LABELS[phase]}</LoadingLine>;
+  return phase === "reading" || phase === "preparing" ? <TypingDots /> : null;
 }
 
 const NOOP = () => { };
@@ -288,10 +322,12 @@ const ResultPanel = React.memo(function ResultPanel({
 
 const MessageItem = React.memo(function MessageItem({
   message,
+  isSearching,
   visibleCols,
   toggleCol,
 }: {
   message: ChatMessage;
+  isSearching: boolean;
   visibleCols: Set<string>;
   toggleCol: (key: string) => void;
 }) {
@@ -316,9 +352,12 @@ const MessageItem = React.memo(function MessageItem({
 
   const hasText = text.length > 0;
   const showTable = Boolean(search) && laptops.length > 0;
+  const planned = isSearching ? getPlannedFilters(message) : null;
 
   return (
     <div className="w-full space-y-4">
+
+      {planned && <SearchingPanel filters={planned} />}
 
       {/* Table first: locks layout before text streams in, prevents end-of-stream jump */}
       {showTable && (
@@ -336,6 +375,7 @@ const MessageItem = React.memo(function MessageItem({
   );
 }, (prev, next) => {
   return prev.message === next.message &&
+    prev.isSearching === next.isSearching &&
     prev.visibleCols === next.visibleCols &&
     prev.toggleCol === next.toggleCol;
 });
@@ -523,10 +563,11 @@ export default function AssistantPage() {
               </div>
             ) : (
               <div className="space-y-7 px-0 pb-24 pt-8">
-                {typedMessages.map((message) => (
+                {typedMessages.map((message, index) => (
                   <MessageItem
                     key={message.id}
                     message={message}
+                    isSearching={streamPhase === "searching" && index === typedMessages.length - 1}
                     visibleCols={visibleCols}
                     toggleCol={toggleCol}
                   />
