@@ -22,7 +22,7 @@ def test_new_listing_is_queued_for_parsing(conn):
     stats = _run_diff(conn, [make_ad("1")])
 
     assert stats["new_items"] == 1
-    assert _one(conn, "select avito_id from new_laptops")["avito_id"] == "1"
+    assert _one(conn, "select listing_id from new_laptops")["listing_id"] == "1"
     assert _one(conn, "select count(*) n from laptops")["n"] == 0
 
 
@@ -70,9 +70,9 @@ def test_listing_unseen_past_the_grace_period_is_marked_sold(conn):
     stats = _run_diff(conn, [make_ad("1")])
 
     assert stats["marked_sold"] == 1
-    sold = _one(conn, "select is_sold, sold_at from laptops where avito_id = '2'")
+    sold = _one(conn, "select is_sold, sold_at from laptops where listing_id = '2'")
     assert sold["is_sold"] is True and sold["sold_at"] is not None
-    assert _one(conn, "select is_sold from laptops where avito_id = '1'")["is_sold"] is False
+    assert _one(conn, "select is_sold from laptops where listing_id = '1'")["is_sold"] is False
 
 
 def test_listing_missed_once_is_not_marked_sold(conn):
@@ -84,7 +84,7 @@ def test_listing_missed_once_is_not_marked_sold(conn):
     stats = _run_diff(conn, [make_ad("1")])
 
     assert stats["marked_sold"] == 0
-    assert _one(conn, "select is_sold from laptops where avito_id = '2'")["is_sold"] is False
+    assert _one(conn, "select is_sold from laptops where listing_id = '2'")["is_sold"] is False
 
 
 def test_incomplete_scrape_never_marks_sold(conn):

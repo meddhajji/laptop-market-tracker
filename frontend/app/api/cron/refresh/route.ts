@@ -1,8 +1,10 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const REPOSITORY = process.env.PIPELINE_REPOSITORY ?? "meddhajji/avito-laptops";
-const WORKFLOW = "avito-refresh.yml";
+// GitHub's numeric id of the repository holding the pipeline. Unlike
+// "owner/name", it keeps working when the repository is renamed.
+const REPOSITORY_ID = process.env.PIPELINE_REPOSITORY_ID ?? "1403529166";
+const WORKFLOW = "nightly-refresh.yml";
 
 const json = (status: number, body: Record<string, unknown>) =>
     new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -24,7 +26,7 @@ export async function GET(request: Request) {
     if (!secret || !token) return json(503, { error: "Pipeline trigger is not configured." });
     if (request.headers.get("authorization") !== `Bearer ${secret}`) return json(401, { error: "Unauthorized." });
 
-    const response = await fetch(`https://api.github.com/repos/${REPOSITORY}/actions/workflows/${WORKFLOW}/dispatches`, {
+    const response = await fetch(`https://api.github.com/repositories/${REPOSITORY_ID}/actions/workflows/${WORKFLOW}/dispatches`, {
         method: "POST",
         headers: {
             Authorization: `Bearer ${token}`,

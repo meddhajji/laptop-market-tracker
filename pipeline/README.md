@@ -1,6 +1,6 @@
-# Avito pipeline
+# Pipeline
 
-Collects laptop listings from Avito.ma, extracts hardware specs with an LLM, scores them and keeps the database in sync with what is currently for sale.
+Collects laptop listings from the marketplace, extracts hardware specs with an LLM, scores them and keeps the database in sync with what is currently for sale.
 
 ```bash
 python pipeline.py          # full run: refresh → parse → dedup → pricing
@@ -18,14 +18,14 @@ python evaluate.py --errors # extraction accuracy against eval/golden.json
 
 Reads the listing pages of the laptop category and extracts the ads from the page's embedded JSON.
 
-- Pages are fetched until Avito returns an empty one, so the whole category is covered whatever its size.
+- Pages are fetched until the site returns an empty one, so the whole category is covered whatever its size.
 - Each page gets 3 attempts with exponential backoff; pages that still fail get one more pass at the end.
 - Guards at ingestion: only `/ordinateurs_portables/` links, no listings under 800 DH (accessories) or over 100,000 DH.
-- The result says whether the scrape was **complete**: it reached the end, no page failed, and the ads seen add up to at least 90% of the total Avito reports. The last check stops a block page that renders as an empty listing from looking like the end of the category.
+- The result says whether the scrape was **complete**: it reached the end, no page failed, and the ads seen add up to at least 90% of the total the site reports. The last check stops a block page that renders as an empty listing from looking like the end of the category.
 
 ### 2. Diff (`refresh.py`)
 
-Compares the scrape with the `laptops` table by Avito ID, in one transaction:
+Compares the scrape with the `laptops` table by listing ID, in one transaction:
 
 | Situation | Action |
 | --- | --- |
@@ -72,7 +72,7 @@ Estimates what each laptop's hardware is typically listed for, so the site can s
 
 The pipeline connects through `DATABASE_URL`. The schema is defined in `db/migrations` at the repository root and applied with `python db.py migrate` (the full pipeline also applies pending migrations on start).
 
-- `laptops`: main table, upserted by Avito ID.
+- `laptops`: main table, upserted by listing ID.
 - `new_laptops`: staging queue, emptied as listings are extracted.
 - `price_history`: every price a listing has had (written by a trigger).
 - `rejected_listings`: listings already rejected as non-laptops; refresh skips them unless their title changes.

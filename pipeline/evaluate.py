@@ -24,7 +24,7 @@ from pathlib import Path
 
 from google import genai
 
-import parser as avito_parser
+import parser as listing_parser
 
 GOLDEN = Path(__file__).parent / "eval" / "golden.json"
 FIELDS = ["brand", "cpu", "ram", "storage", "ssd", "screen_size", "gpu_type"]
@@ -53,7 +53,7 @@ def evaluate(entries: list[dict], results: list[dict]) -> dict:
     for entry in entries:
         result = by_id.get(str(entry["id"]))
         specs = (result or {}).get("specs") or {}
-        kept = bool(result and result.get("is_laptop") and avito_parser.is_valid_parse(specs))
+        kept = bool(result and result.get("is_laptop") and listing_parser.is_valid_parse(specs))
         expected = entry["expected"]
 
         scores["kept"][1] += 1
@@ -75,18 +75,18 @@ def evaluate(entries: list[dict], results: list[dict]) -> dict:
 
 
 def main(show_errors: bool = False):
-    if not avito_parser.GEMINI_KEY:
+    if not listing_parser.GEMINI_KEY:
         raise RuntimeError("GEMINI_API_KEY is not set")
     entries = json.loads(GOLDEN.read_text(encoding="utf-8"))
     items = [{"id": entry["id"], "description": entry["text"]} for entry in entries]
 
-    client = genai.Client(api_key=avito_parser.GEMINI_KEY)
+    client = genai.Client(api_key=listing_parser.GEMINI_KEY)
     results = []
-    for start in range(0, len(items), avito_parser.GEMINI_BATCH):
-        results += avito_parser.parse_batch_gemini(client, items[start:start + avito_parser.GEMINI_BATCH])
+    for start in range(0, len(items), listing_parser.GEMINI_BATCH):
+        results += listing_parser.parse_batch_gemini(client, items[start:start + listing_parser.GEMINI_BATCH])
 
     report = evaluate(entries, results)
-    print(f"Model: {avito_parser.MODEL} | listings: {len(entries)}")
+    print(f"Model: {listing_parser.MODEL} | listings: {len(entries)}")
     for field, (correct, total) in report["scores"].items():
         print(f"  {field:<12} {correct:>3}/{total:<3} {100 * correct / max(total, 1):5.1f}%")
     if show_errors:

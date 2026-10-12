@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 """
-Avito Laptop Scraper
-Fetches laptop listings from Avito.ma and normalizes their text.
+Laptop listing scraper
+Fetches laptop listings from the marketplace and normalizes their text.
 
 Key guards applied at ingestion:
   - URL category filter: only /ordinateurs_portables/ links accepted
   - Price floor: listings under 800 DH are dropped (accessories, not laptops)
   - content_hash: MD5 of the title, used by refresh.py to detect rewritten listings
 
-Pages are fetched until Avito returns an empty one, failed pages are retried
+Pages are fetched until the site returns an empty one, failed pages are retried
 with backoff, and the result reports whether the scrape was complete (checked
-against Avito's own listing total) so callers can decide if "not seen" really
+against the site's own listing total) so callers can decide if "not seen" really
 means "gone".
 """
 import hashlib
@@ -24,6 +24,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlsplit
 
 import requests
 from bs4 import BeautifulSoup
@@ -34,9 +35,13 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
+# The marketplace category this pipeline reads. Its name appears only here:
+# the origin and the site name used below are derived from this address.
 BASE_URL = "https://www.avito.ma/fr/maroc/ordinateurs_portables"
+SITE_ORIGIN = "{0.scheme}://{0.netloc}".format(urlsplit(BASE_URL))
+SITE_NAME = urlsplit(BASE_URL).hostname.split(".")[-2]
 HARD_PAGE_LIMIT = 1500   # runaway guard; the category has ~700 pages
-MIN_COVERAGE = 0.9       # share of Avito's listing total we must have seen to call a scrape complete
+MIN_COVERAGE = 0.9       # share of the site's listing total we must have seen to call a scrape complete
 BATCH_SIZE = 25          # pages fetched concurrently
 BATCH_DELAY = 2.0        # seconds between batches
 REQUEST_TIMEOUT = 15
@@ -65,7 +70,7 @@ def compress_text(title: str, description: str) -> str:
     noise_patterns = [
         r"livraison (partout au maroc|gratuite|possible|disponible)",
         r"paiement (à|a) la livraison",
-        r"contact(ez-nous|ez-moi| rapide| par| via)? (sur|via|par)? (whatsapp|avito|téléphone)",
+        rf"contact(ez-nous|ez-moi| rapide| par| via)? (sur|via|par)? (whatsapp|{re.escape(SITE_NAME)}|téléphone)",
         r"disponible (immédiatement|dès maintenant|maintenant)",
         r"garantie \d+ mois",
         r"prix (fixe|négociable|dh|dhs)",
@@ -96,10 +101,10 @@ _AGE_UNITS = {
 }
 
 def parse_listed_at(relative: str, now: datetime | None = None) -> datetime | None:
-    """Convert Avito's relative age ("il y a 4 minutes", "il y a 2 jours") to a UTC timestamp.
+    """Convert the site's relative age ("il y a 4 minutes", "il y a 2 jours") to a UTC timestamp.
 
     Returns None for anything unrecognized. The result is only as precise as the
-    unit Avito shows.
+    unit the site shows.
     """
     m = re.search(r"il y a (\d+|une?) (minute|heure|jour|semaine|mois|an)", (relative or "").lower())
     if not m:
@@ -160,10 +165,10 @@ def _parse_ads(data: dict) -> list[dict]:
             # --- Extract link first for category guard ---
             link = ad.get("href", "")
             if link and not link.startswith("http"):
-                link = f"https://www.avito.ma{link}"
+                link = f"{SITE_ORIGIN}{link}"
 
             # Guard 1: URL category filter: only laptop category URLs pass.
-            # Every individual laptop listing on Avito contains /ordinateurs_portables/
+            # Every individual laptop listing on the site contains /ordinateurs_portables/
             # in its path. Accessories, bags, stands, etc. live in different paths.
             if not link or "/ordinateurs_portables/" not in link:
                 logger.debug("Skipped non-laptop URL: %s", link[:80])
@@ -178,18 +183,18 @@ def _parse_ads(data: dict) -> list[dict]:
                 logger.debug("Skipped overpriced ad (price: %d): %s", price, link)
                 continue
 
-            # Guard 3: Price floor: the cheapest operational laptop on avito.ma is ~900 DH.
+            # Guard 3: Price floor: the cheapest operational laptop on the site is ~900 DH.
             # Sub-800 DH items are accessories, parts, repair services, or PC stands.
             if 0 < price < 800:
                 logger.debug("Skipped sub-800 DH listing (price: %d): %s", price, link)
                 continue
 
-            # --- Extract avito_id ---
-            avito_id = ad.get("id")
-            if not avito_id and link:
+            # --- Extract the listing id ---
+            listing_id = ad.get("id")
+            if not listing_id and link:
                 m = re.search(r"_(\d+)\.htm", link)
                 if m:
-                    avito_id = m.group(1)
+                    listing_id = m.group(1)
 
             # --- Extract and compress text ---
             title = ad.get("subject", "")
@@ -204,7 +209,7 @@ def _parse_ads(data: dict) -> list[dict]:
             content_hash = hashlib.md5(title.lower().encode("utf-8")).hexdigest()
 
             results.append({
-                "avito_id": avito_id or "",
+                "listing_id": listing_id or "",
                 "description": compressed,
                 "price": price,
                 "city": ad.get("location", ""),
@@ -224,7 +229,7 @@ def _parse_ads(data: dict) -> list[dict]:
 @dataclass
 class ScrapeResult:
     ads: list[dict] = field(default_factory=list)
-    total_listed: int = 0          # listings Avito says exist in the category
+    total_listed: int = 0          # listings the site says exist in the category
     raw_seen: int = 0              # ads on fetched pages, before guards and de-duplication
     pages_fetched: int = 0
     failed_pages: list[int] = field(default_factory=list)
@@ -236,7 +241,7 @@ class ScrapeResult:
         """The whole category was fetched, so an unseen listing is really gone.
 
         Besides reaching the end with no failed pages, the ads seen must add up to
-        roughly what Avito says exists: a block page that renders as an empty
+        roughly what the site says exists: a block page that renders as an empty
         listing would otherwise look like the end of the category.
         """
         return (
@@ -316,14 +321,14 @@ def scrape(max_pages: int | None = None) -> ScrapeResult:
         result.pages_fetched += 1
         result.raw_seen += page.raw_count
         for ad in page.ads:
-            key = ad["avito_id"] or ad["link"]
+            key = ad["listing_id"] or ad["link"]
             if key and key not in seen:
                 seen.add(key)
                 result.ads.append(ad)
 
     first = _fetch_page(1)
     if not first.ok or first.raw_count == 0:
-        logger.error("Page 1 could not be scraped: Avito is blocking us or changed its page structure.")
+        logger.error("Page 1 could not be scraped: the site is blocking us or changed its page structure.")
         result.failed_pages.append(1)
         return result
     collect(first)
@@ -331,7 +336,7 @@ def scrape(max_pages: int | None = None) -> ScrapeResult:
 
     last_page = min(max_pages or HARD_PAGE_LIMIT, HARD_PAGE_LIMIT)
     expected_pages = math.ceil(first.total_listed / max(first.raw_count, 1))
-    logger.info("Avito lists %d ads (about %d pages)", first.total_listed, expected_pages)
+    logger.info("The site lists %d ads (about %d pages)", first.total_listed, expected_pages)
 
     with ThreadPoolExecutor(max_workers=BATCH_SIZE) as pool:
         for batch_start in range(2, last_page + 1, BATCH_SIZE):

@@ -1,7 +1,7 @@
 -- 0002_duplicates_and_parse_attempts.sql
 
 -- Duplicate listings are flagged instead of deleted. A deleted row that is still
--- live on Avito would look brand new to the next refresh and be parsed again.
+-- live on the site would look brand new to the next refresh and be parsed again.
 alter table laptops
     add column duplicate_of integer references laptops (id) on delete set null;
 

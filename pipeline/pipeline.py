@@ -2,9 +2,9 @@
 """
 pipeline.py
 
-The master script that runs the entire daily Avito data refresh pipeline.
+The master script that runs the entire daily data refresh pipeline.
 It executes the following steps in sequence:
-1. refresh.py       (Scrape Avito, diff with DB by avito_id, populate new_laptops)
+1. refresh.py       (Scrape the listings, diff with DB by listing_id, populate new_laptops)
 2. parser.py        (Loop: parse specs, score, upsert to laptops, clear new_laptops)
 3. dedup.py         (Flag duplicate active listings)
 4. pricing.py       (Estimate a fair market price for every active listing)
@@ -45,7 +45,7 @@ def run_step(script_name: str, func, *args, **kwargs):
 
 def main(max_pages: int | None = None):
     total_start = time.time()
-    logger.info("Starting Daily Avito Pipeline")
+    logger.info("Starting the daily pipeline")
 
     # Pre-flight: cpu.csv must exist for scoring to work
     cpu_csv = Path(__file__).parent / "cpu.csv"
@@ -100,7 +100,7 @@ def main(max_pages: int | None = None):
 if __name__ == "__main__":
     import argparse
 
-    arg_parser = argparse.ArgumentParser(description="Run the full Avito pipeline")
+    arg_parser = argparse.ArgumentParser(description="Run the full pipeline")
     arg_parser.add_argument("-p", "--pages", type=int, default=None,
                             help="Scrape only this many pages (trial run; never marks listings sold)")
     main(arg_parser.parse_args().pages)

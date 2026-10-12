@@ -6,8 +6,8 @@ import scraper
 from scraper import _Page
 
 
-def _ad(avito_id: str) -> dict:
-    return {"avito_id": avito_id, "link": f"https://www.avito.ma/fr/x/ordinateurs_portables/a_{avito_id}.htm"}
+def _ad(listing_id: str) -> dict:
+    return {"listing_id": listing_id, "link": f"https://example.com/fr/x/ordinateurs_portables/a_{listing_id}.htm"}
 
 
 def _fake_site(pages: dict[int, list[str]], total: int, failing: dict[int, int] | None = None):
@@ -39,14 +39,14 @@ def test_scrapes_until_an_empty_page(monkeypatch):
 
     result = scraper.scrape()
 
-    assert [ad["avito_id"] for ad in result.ads] == ["a", "b", "c", "d", "e", "f"]
+    assert [ad["listing_id"] for ad in result.ads] == ["a", "b", "c", "d", "e", "f"]
     assert result.total_listed == 6
     assert result.complete
     assert max(calls) <= 5  # stopped after the batch that hit the empty page
 
 
 def test_early_empty_page_is_not_mistaken_for_the_end(monkeypatch):
-    # Avito says 20 listings exist but serves an empty page 3 (e.g. a soft block).
+    # The site says 20 listings exist but serves an empty page 3 (e.g. a soft block).
     pages = {1: ["a", "b"], 2: ["c", "d"]}
     fetch, _ = _fake_site(pages, total=20)
     monkeypatch.setattr(scraper, "_fetch_page", fetch)
@@ -64,7 +64,7 @@ def test_listing_appearing_on_two_pages_is_kept_once(monkeypatch):
 
     result = scraper.scrape()
 
-    assert [ad["avito_id"] for ad in result.ads] == ["a", "b", "c"]
+    assert [ad["listing_id"] for ad in result.ads] == ["a", "b", "c"]
 
 
 def test_failed_page_is_retried_and_recovered(monkeypatch):
@@ -127,9 +127,9 @@ def test_parse_ads_applies_category_and_price_guards():
         {"id": 6, "href": laptop_href, "subject": "Hp Elitebook", "price": {}},                                       # price not listed: kept
     ]))
 
-    assert [ad["avito_id"] for ad in ads] == [1, 6]
+    assert [ad["listing_id"] for ad in ads] == [1, 6]
     first = ads[0]
-    assert first["link"] == "https://www.avito.ma" + laptop_href
+    assert first["link"] == scraper.SITE_ORIGIN + laptop_href
     assert (first["price"], first["city"], first["is_shop"]) == (3000.0, "Casablanca", True)
     assert first["listed_at"] is not None
     assert ads[1]["price"] == 0.0

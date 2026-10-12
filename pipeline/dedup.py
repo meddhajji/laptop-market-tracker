@@ -9,7 +9,7 @@ when they share:
 
 Within each group the row with the HIGHEST `id` is the keeper (most recently
 inserted); the others get `duplicate_of = <keeper id>` and are hidden from the
-app. Rows are never deleted: a deleted listing that is still live on Avito would
+app. Rows are never deleted: a deleted listing that is still live on the site would
 look new to the next refresh and be sent to the LLM again, every day.
 
 Flags are recomputed from scratch on each run, so a listing stops being a

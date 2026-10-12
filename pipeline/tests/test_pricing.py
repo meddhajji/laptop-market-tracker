@@ -77,14 +77,14 @@ def test_fair_price_is_stored_and_deal_pct_derived(conn, monkeypatch):
         make_laptop("3", price=0.0, model="Unpriced"),
         make_laptop("4", price=5000.0, model="Sold", is_sold=True),
     ])
-    conn.execute("update laptops set duplicate_of = (select id from laptops where avito_id = '1') where avito_id = '2'")
+    conn.execute("update laptops set duplicate_of = (select id from laptops where listing_id = '1') where listing_id = '2'")
     # Pin the model's output so the stored values can be checked exactly
     monkeypatch.setattr(pricing, "estimate_prices", lambda rows: ([3750 for _ in rows], 12.34))
 
     stats = pricing.update_fair_prices(conn)
 
     assert stats == {"priced": 1, "price_model_error": 12.3}
-    rows = {r["avito_id"]: r for r in conn.execute("select avito_id, fair_price, deal_pct from laptops")}
+    rows = {r["listing_id"]: r for r in conn.execute("select listing_id, fair_price, deal_pct from laptops")}
     assert (rows["1"]["fair_price"], rows["1"]["deal_pct"]) == (3750, -20)
     assert (rows["2"]["fair_price"], rows["2"]["deal_pct"]) == (3750, 7)   # duplicate inherits its keeper's estimate
     assert rows["3"]["fair_price"] is None and rows["3"]["deal_pct"] is None

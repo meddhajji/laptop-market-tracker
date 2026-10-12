@@ -1,6 +1,6 @@
 import db
 import dedup
-import parser as avito_parser
+import parser as listing_parser
 from conftest import make_laptop
 
 
@@ -8,7 +8,7 @@ def test_migrate_is_idempotent(conn):
     assert db.migrate(conn) == []
 
 
-def test_upsert_updates_existing_row_by_avito_id(conn):
+def test_upsert_updates_existing_row_by_listing_id(conn):
     db.upsert_laptops(conn, [make_laptop("1", ram=8.0)])
     db.upsert_laptops(conn, [make_laptop("1", ram=16.0)])
 
@@ -28,16 +28,16 @@ def test_search_ignores_words_that_only_appear_in_the_description(conn):
         make_laptop("2", brand="Dell", model="Chromebook 11", description="lot chromebook dell hp vente en gros"),
     ])
 
-    hits = conn.execute("select avito_id from laptops where search_vector @@ to_tsquery('simple', 'hp:*')").fetchall()
-    assert [h["avito_id"] for h in hits] == ["1"]
+    hits = conn.execute("select listing_id from laptops where search_vector @@ to_tsquery('simple', 'hp:*')").fetchall()
+    assert [h["listing_id"] for h in hits] == ["1"]
 
 
 def test_previous_price_is_kept_when_the_price_changes(conn):
     db.upsert_laptops(conn, [make_laptop("1", price=4000.0)])
     assert conn.execute("select previous_price from laptops").fetchone()["previous_price"] is None
 
-    conn.execute("update laptops set price = 3500 where avito_id = '1'")
-    conn.execute("update laptops set city = 'Rabat' where avito_id = '1'")  # unrelated update keeps it
+    conn.execute("update laptops set price = 3500 where listing_id = '1'")
+    conn.execute("update laptops set city = 'Rabat' where listing_id = '1'")  # unrelated update keeps it
 
     assert conn.execute("select previous_price from laptops").fetchone()["previous_price"] == 4000.0
 
@@ -49,9 +49,9 @@ def test_search_vector_matches_prefix_across_fields(conn):
     ])
 
     hits = conn.execute(
-        "select avito_id from laptops where search_vector @@ to_tsquery('simple', 'thinkp:* & rabat:*')"
+        "select listing_id from laptops where search_vector @@ to_tsquery('simple', 'thinkp:* & rabat:*')"
     ).fetchall()
-    assert [h["avito_id"] for h in hits] == ["1"]
+    assert [h["listing_id"] for h in hits] == ["1"]
 
 
 def test_dedup_flags_older_duplicates_and_ignores_sold(conn):
@@ -65,7 +65,7 @@ def test_dedup_flags_older_duplicates_and_ignores_sold(conn):
     flagged = dedup.flag_duplicates(conn)
 
     assert flagged == 1
-    rows = {r["avito_id"]: r for r in conn.execute("select avito_id, id, duplicate_of from laptops")}
+    rows = {r["listing_id"]: r for r in conn.execute("select listing_id, id, duplicate_of from laptops")}
     assert rows["1"]["duplicate_of"] == rows["2"]["id"]  # the newer row is the keeper
     assert all(rows[k]["duplicate_of"] is None for k in ("2", "3", "4"))
     assert len(rows) == 4                                # nothing deleted
@@ -75,7 +75,7 @@ def test_dedup_clears_the_flag_when_listings_stop_matching(conn):
     db.upsert_laptops(conn, [make_laptop("1"), make_laptop("2")])
     assert dedup.flag_duplicates(conn) == 1
 
-    conn.execute("update laptops set price = 2500 where avito_id = '2'")
+    conn.execute("update laptops set price = 2500 where listing_id = '2'")
 
     assert dedup.flag_duplicates(conn) == 0
 
@@ -94,12 +94,12 @@ def test_flagged_duplicate_is_not_requeued_by_the_next_refresh(conn):
 
 
 def test_to_db_row_normalizes_constrained_columns(conn):
-    raw = {"id": 1, "avito_id": "1", "link": "https://x/1.htm", "description": "hp", "price": 2500,
+    raw = {"id": 1, "listing_id": "1", "link": "https://x/1.htm", "description": "hp", "price": 2500,
            "city": "Fes", "content_hash": "h", "is_shop": True, "has_delivery": False}
     specs = {"brand": "Hp", "cpu": "i5-8250u", "ram": 8, "storage": 256, "ssd": 1,
              "gpu_type": "dedicated", "new": 2, "touchscreen": None}
 
-    row = avito_parser.to_db_row(raw, specs)
+    row = listing_parser.to_db_row(raw, specs)
     db.upsert_laptops(conn, [row])  # would violate check constraints if not normalized
 
     stored = conn.execute("select gpu_type, new, touchscreen, ssd from laptops").fetchone()
@@ -107,7 +107,7 @@ def test_to_db_row_normalizes_constrained_columns(conn):
 
 
 def test_to_db_row_drops_unknown_gpu_type():
-    raw = {"id": 1, "avito_id": "1", "link": "l", "description": "d", "price": 2500}
-    row = avito_parser.to_db_row(raw, {"cpu": "i5", "ram": 8, "gpu_type": "Hybrid"})
+    raw = {"id": 1, "listing_id": "1", "link": "l", "description": "d", "price": 2500}
+    row = listing_parser.to_db_row(raw, {"cpu": "i5", "ram": 8, "gpu_type": "Hybrid"})
 
     assert row["gpu_type"] is None

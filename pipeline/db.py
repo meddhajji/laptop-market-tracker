@@ -30,7 +30,7 @@ SEED_CSV = Path(os.getenv("SEED_CSV", REPO_ROOT / "db" / "seed" / "laptops_sampl
 
 # Columns written to `laptops` by the parser and the seed loader
 LAPTOP_COLS = [
-    "avito_id", "link", "description", "content_hash", "price", "city",
+    "listing_id", "link", "description", "content_hash", "price", "city",
     "is_shop", "has_delivery", "brand", "model", "cpu", "ram", "storage", "ssd",
     "gpu", "gpu_type", "gpu_vram", "screen_size", "refresh_rate", "new",
     "touchscreen", "score", "is_sold", "listed_at",
@@ -86,15 +86,15 @@ def migrate(conn: psycopg.Connection) -> list[str]:
 _UPSERT_SQL = (
     f"insert into laptops ({', '.join(LAPTOP_COLS)}, sold_at) "
     f"values ({', '.join(f'%({c})s' for c in LAPTOP_COLS)}, case when %(is_sold)s then now() end) "
-    "on conflict (avito_id) do update set "
-    + ", ".join(f"{c} = excluded.{c}" for c in LAPTOP_COLS if c != "avito_id")
+    "on conflict (listing_id) do update set "
+    + ", ".join(f"{c} = excluded.{c}" for c in LAPTOP_COLS if c != "listing_id")
     + ", sold_at = case when excluded.is_sold then coalesce(laptops.sold_at, now()) end"
     + ", last_seen_at = now()"
 )
 
 
 def upsert_laptops(conn: psycopg.Connection, rows: list[dict]):
-    """Insert or update laptops by avito_id. Caller commits."""
+    """Insert or update laptops by listing_id. Caller commits."""
     if not rows:
         return
     payload = [{c: row.get(c) for c in LAPTOP_COLS} for row in rows]

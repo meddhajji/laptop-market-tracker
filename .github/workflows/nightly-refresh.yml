@@ -1,4 +1,4 @@
-name: Daily Avito Data Refresh
+name: Nightly data refresh
 
 on:
   # GitHub's schedule trigger. It has never fired for this repository (a no-op
@@ -20,7 +20,7 @@ on:
 
 # Never run two refreshes at once; a second trigger waits for the first to finish
 concurrency:
-  group: avito-refresh
+  group: nightly-refresh
   cancel-in-progress: false
 
 jobs:

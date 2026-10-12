@@ -2,7 +2,7 @@
 -- Core schema. Plain PostgreSQL (14+): works on Supabase, Neon, or a local container.
 
 -- ---------------------------------------------------------------------------
--- laptops: one row per Avito listing that was classified as a laptop
+-- laptops: one row per marketplace listing that was classified as a laptop
 -- ---------------------------------------------------------------------------
 create table laptops (
     id            integer generated always as identity primary key,

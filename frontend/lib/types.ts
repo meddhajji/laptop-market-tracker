@@ -1,6 +1,5 @@
 export interface Laptop {
     id: number;
-    avito_id: string;
     description: string;
     price: number | null;
     city: string | null;

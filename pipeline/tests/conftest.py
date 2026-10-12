@@ -40,11 +40,11 @@ def conn():
             connection.commit()
 
 
-def make_laptop(avito_id: str, **overrides) -> dict:
+def make_laptop(listing_id: str, **overrides) -> dict:
     """A parsed laptop row as the parser would produce it."""
     row = {
-        "avito_id": avito_id,
-        "link": f"https://www.avito.ma/fr/x/ordinateurs_portables/item_{avito_id}.htm",
+        "listing_id": listing_id,
+        "link": f"https://example.com/fr/x/ordinateurs_portables/item_{listing_id}.htm",
         "description": "dell latitude 5420 i5 16gb 256gb",
         "content_hash": "hash-a",
         "price": 3000.0,
@@ -72,11 +72,11 @@ def make_laptop(avito_id: str, **overrides) -> dict:
     return row
 
 
-def make_ad(avito_id: str, **overrides) -> dict:
+def make_ad(listing_id: str, **overrides) -> dict:
     """A scraped ad as scraper._parse_ads would produce it."""
     ad = {
-        "avito_id": avito_id,
-        "link": f"https://www.avito.ma/fr/x/ordinateurs_portables/item_{avito_id}.htm",
+        "listing_id": listing_id,
+        "link": f"https://example.com/fr/x/ordinateurs_portables/item_{listing_id}.htm",
         "description": "dell latitude 5420 i5 16gb 256gb",
         "content_hash": "hash-a",
         "price": 3000.0,

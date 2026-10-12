@@ -4,7 +4,7 @@ parser.py
 
 Reads listings from the `new_laptops` staging queue, sends them to Gemini for
 laptop/non-laptop classification and spec extraction, upserts confirmed laptops
-into `laptops` (on conflict avito_id) and removes processed rows from the queue.
+into `laptops` (on conflict listing_id) and removes processed rows from the queue.
 
 Design:
   - Structured output: Gemini is given a JSON schema, and every response is
@@ -96,7 +96,7 @@ class ListingResult(BaseModel):
 
 _RESULTS = TypeAdapter(list[ListingResult])
 
-SYSTEM_PROMPT = """You are a data extraction pipeline for laptop listings from a Moroccan classifieds site (Avito.ma).
+SYSTEM_PROMPT = """You are a data extraction pipeline for laptop listings from a Moroccan classifieds site.
 
 INPUT: A JSON array. Each element has exactly two fields:
   "job_id": a string identifier: copy it unchanged to your output
@@ -191,16 +191,16 @@ def remember_rejected(conn: psycopg.Connection, listings: list[dict]):
         return
     with conn.cursor() as cur:
         cur.executemany(
-            "insert into rejected_listings (avito_id, content_hash) values (%(avito_id)s, %(content_hash)s) "
-            "on conflict (avito_id) do update set content_hash = excluded.content_hash, rejected_at = now()",
+            "insert into rejected_listings (listing_id, content_hash) values (%(listing_id)s, %(content_hash)s) "
+            "on conflict (listing_id) do update set content_hash = excluded.content_hash, rejected_at = now()",
             listings,
         )
 
 
-def forget_rejected(conn: psycopg.Connection, avito_ids: list[str]):
+def forget_rejected(conn: psycopg.Connection, listing_ids: list[str]):
     """A listing rewritten into a real laptop is no longer a reject. Caller commits."""
-    if avito_ids:
-        conn.execute("delete from rejected_listings where avito_id = any(%s)", (avito_ids,))
+    if listing_ids:
+        conn.execute("delete from rejected_listings where listing_id = any(%s)", (listing_ids,))
 
 
 # ---------------------------------------------------------------------------
@@ -317,7 +317,7 @@ def to_db_row(raw_item: dict, specs: dict) -> dict | None:
         return None
 
     out: dict = {
-        "avito_id": str(raw_item.get("avito_id", "")),
+        "listing_id": str(raw_item.get("listing_id", "")),
         "description": truncate_description(str(raw_item.get("description", ""))),
         "link": str(raw_item.get("link", "")),
         "city": str(raw_item.get("city") or ""),
@@ -367,14 +367,14 @@ def store_results(conn: psycopg.Connection, items: list[dict], results: list[dic
         specs = result.get("specs") or {}
         row = to_db_row(item, specs) if result.get("is_laptop") and is_valid_parse(specs) else None
         if row is None:
-            rejected.append({"avito_id": str(item["avito_id"]), "content_hash": item.get("content_hash") or ""})
+            rejected.append({"listing_id": str(item["listing_id"]), "content_hash": item.get("content_hash") or ""})
         else:
             rows.append(row)
 
     with conn.transaction():
         db.upsert_laptops(conn, rows)
         remember_rejected(conn, rejected)
-        forget_rejected(conn, [row["avito_id"] for row in rows])
+        forget_rejected(conn, [row["listing_id"] for row in rows])
         delete_from_new_laptops(conn, done_ids)
 
     return {"laptops": len(rows), "rejected": len(rejected), "unanswered": len(items) - len(done_ids)}
