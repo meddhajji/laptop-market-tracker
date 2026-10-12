@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BotMessageSquare, Github, LayoutDashboard } from "lucide-react";
-
-const iconButton =
-    "rounded-md p-2 border border-transparent transition-all duration-300 hover:text-foreground hover:bg-black/[0.04] dark:hover:bg-white/[0.08] hover:backdrop-blur-md hover:border-black/5 dark:hover:border-white/10";
+import { Github, MessageCircle, Table2 } from "lucide-react";
 
 export function Navbar() {
     const pathname = usePathname();
@@ -19,14 +16,14 @@ export function Navbar() {
     };
 
     const links = [
-        { path: "/", href: "/" + (pathname !== "/" ? getStoredParams("dashboard_params") : ""), label: "Dashboard", icon: LayoutDashboard },
-        { path: "/assistant", href: "/assistant", label: "AI assistant", icon: BotMessageSquare },
+        { path: "/", href: "/" + (pathname !== "/" ? getStoredParams("dashboard_params") : ""), label: "Laptops", icon: Table2 },
+        { path: "/assistant", href: "/assistant", label: "AI Assistant", icon: MessageCircle },
     ];
 
     return (
         <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                     {links.map(({ path, href, label, icon: Icon }) => (
                         <Link
                             key={path}
@@ -36,13 +33,11 @@ export function Navbar() {
                             aria-current={pathname === path ? "page" : undefined}
                             suppressHydrationWarning
                             className={cn(
-                                iconButton,
-                                pathname === path
-                                    ? "bg-zinc-900/10 dark:bg-white/15 text-zinc-900 dark:text-zinc-100 shadow-sm backdrop-blur-md border-black/5 dark:border-white/10"
-                                    : "text-muted-foreground"
+                                "p-2 transition-colors duration-200",
+                                pathname === path ? "text-foreground" : "text-muted-foreground/50 hover:text-foreground"
                             )}
                         >
-                            <Icon className="size-[18px]" />
+                            <Icon className="size-5" strokeWidth={1.75} />
                         </Link>
                     ))}
                 </div>
@@ -52,9 +47,9 @@ export function Navbar() {
                     rel="noopener noreferrer"
                     aria-label="Source code on GitHub"
                     title="Source code on GitHub"
-                    className={cn(iconButton, "text-muted-foreground")}
+                    className="p-2 text-muted-foreground/50 transition-colors duration-200 hover:text-foreground"
                 >
-                    <Github className="size-[18px]" />
+                    <Github className="size-5" strokeWidth={1.75} />
                 </a>
             </nav>
         </header>
