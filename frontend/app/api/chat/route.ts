@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         return json(429, { error }, { "Retry-After": String(limit.retryAfterSeconds) });
     }
 
-    const { question, previousQuestions, lastFilters } = parsed.request;
+    const { question, previousQuestions, lastFilters, removeFilter, language } = parsed.request;
 
     const stream = createUIMessageStream({
         execute: async ({ writer }) => {
@@ -58,23 +58,30 @@ export async function POST(req: Request) {
 
             writer.write({ type: "start" });
 
-            const interpretation = await interpret({ question, previousQuestions, lastFilters });
-            if (!interpretation) {
+            // Removing a filter from the results panel is already a structured request: no model needed
+            const removal = removeFilter
+                ? { drop: removeFilter === "sort_by" ? ["sort_by", "sort_order"] : [removeFilter], goal: "the same search with one filter removed", language: language ?? "en" }
+                : null;
+            const interpretation = removal ? null : await interpret({ question, previousQuestions, lastFilters });
+            if (!removal && !interpretation) {
                 say(UNAVAILABLE_REPLY);
-            } else if (interpretation.kind === "other") {
+            } else if (interpretation?.kind === "other") {
                 say(offTopicReply(interpretation.language));
             } else {
-                const requested = cleanFilters(interpretation.filters);
-                const filters = interpretation.follow_up ? mergeFilters(lastFilters, requested, interpretation.drop) : requested;
+                const requested = cleanFilters(interpretation?.filters);
+                const filters = removal
+                    ? mergeFilters(lastFilters, {}, removal.drop)
+                    : interpretation?.follow_up ? mergeFilters(lastFilters, requested, interpretation.drop) : requested;
+                const answering = removal ?? interpretation!;
                 const searchId = `search-${Date.now()}`;
                 // Sent before the query runs, so the page can show what was understood while it searches
                 writer.write({ type: "data-plan", id: `plan-${searchId}`, data: { filters } });
                 const { laptops, stats } = await runSearch(filters);
 
                 writer.write({ type: "data-laptops", id: `laptops-${searchId}`, data: laptops });
-                writer.write({ type: "data-search", id: searchId, data: { filters, stats } });
+                writer.write({ type: "data-search", id: searchId, data: { filters, stats, language: answering.language } });
 
-                await streamSummary({ interpretation, filters, stats, laptops }, say);
+                await streamSummary({ interpretation: answering, filters, stats, laptops }, say);
             }
 
             if (textOpen) writer.write({ type: "text-end", id: textId });

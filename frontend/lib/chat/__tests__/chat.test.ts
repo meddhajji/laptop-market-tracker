@@ -144,6 +144,15 @@ describe("parseChatRequest", () => {
         expect(result).toEqual({ ok: true, request: { question: "show them", previousQuestions: [], lastFilters: { limit: 20 } } });
     });
 
+    it("accepts the removal of a known filter and ignores anything else", () => {
+        const ok = parseChatRequest(JSON.stringify({ question: "Without the budget", removeFilter: "price_max", language: "fr" }));
+        const forged = parseChatRequest(JSON.stringify({ question: "x", removeFilter: "constructor", language: "xx" }));
+
+        expect(ok).toMatchObject({ ok: true, request: { removeFilter: "price_max", language: "fr" } });
+        expect(forged.ok && forged.request.removeFilter).toBeUndefined();
+        expect(forged.ok && forged.request.language).toBeUndefined();
+    });
+
     it("keeps only the last three previous questions, truncated", () => {
         const result = parseChatRequest(JSON.stringify({ question: "q", previousQuestions: ["1", "2", "3", "4", "x".repeat(500)] }));
 

@@ -1,4 +1,4 @@
-import { cleanFilters, type LaptopFilters } from "./filters";
+import { cleanFilters, FILTER_KEYS, type LaptopFilters } from "./filters";
 
 export const MAX_BODY_BYTES = 8_000;
 export const MAX_QUESTION_CHARS = 600;
@@ -9,7 +9,13 @@ export type ChatRequest = {
     question: string;
     previousQuestions: string[];
     lastFilters: LaptopFilters;
+    /** Set when the visitor removes a filter from the results panel instead of typing. */
+    removeFilter?: keyof LaptopFilters;
+    language?: Language;
 };
+
+const LANGUAGES = ["en", "fr", "ar"] as const;
+export type Language = (typeof LANGUAGES)[number];
 
 export type ParseResult = { ok: true; request: ChatRequest } | { ok: false; status: number; error: string };
 
@@ -30,7 +36,7 @@ export function parseChatRequest(rawBody: string): ParseResult {
         return fail(400, "Invalid JSON.");
     }
     if (!body || typeof body !== "object" || Array.isArray(body)) return fail(400, "Invalid request.");
-    const { question, previousQuestions, lastFilters } = body as Record<string, unknown>;
+    const { question, previousQuestions, lastFilters, removeFilter, language } = body as Record<string, unknown>;
 
     if (typeof question !== "string" || !question.trim()) return fail(400, "Ask a question first.");
     if (question.length > MAX_QUESTION_CHARS) return fail(400, `Keep your question under ${MAX_QUESTION_CHARS} characters.`);
@@ -44,6 +50,12 @@ export function parseChatRequest(rawBody: string): ParseResult {
 
     return {
         ok: true,
-        request: { question: question.trim(), previousQuestions: previous, lastFilters: cleanFilters(lastFilters) },
+        request: {
+            question: question.trim(),
+            previousQuestions: previous,
+            lastFilters: cleanFilters(lastFilters),
+            removeFilter: FILTER_KEYS.find((key) => key === removeFilter),
+            language: LANGUAGES.find((code) => code === language),
+        },
     };
 }

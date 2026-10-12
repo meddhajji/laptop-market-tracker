@@ -130,7 +130,7 @@ export function plainSummary(stats: SearchStats): string {
  * fields, so there is nothing a user can type to make it write something else.
  */
 export async function streamSummary(
-    input: { interpretation: Interpretation; filters: LaptopFilters; stats: SearchStats; laptops: Laptop[] },
+    input: { interpretation: Pick<Interpretation, "goal" | "language">; filters: LaptopFilters; stats: SearchStats; laptops: Laptop[] },
     onDelta: (text: string) => void,
 ): Promise<void> {
     const prompt = JSON.stringify({

@@ -62,6 +62,9 @@ export const llmFiltersSchema = z.object({
     suggested_columns: z.array(z.string()).nullable().describe(`Table columns relevant to the request, from: ${DISPLAY_COLUMNS.join(", ")}.`),
 });
 
+/** Every filter name, to validate a request to remove one. */
+export const FILTER_KEYS = Object.keys(llmFiltersSchema.shape) as Array<keyof LaptopFilters>;
+
 // Words the model sometimes leaks into search_terms; they are filters or noise, not keywords
 const NON_KEYWORDS = /^(touchscreen|tactile|new|neuf|used|occasion|laptops?|pcs?|ordinateurs?|portables?|cheap|affordable|budget|gaming|gamers?|best|good)$/i;
 

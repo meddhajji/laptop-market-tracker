@@ -5,7 +5,7 @@ import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { ArrowDown, ArrowUp, Loader2, SquarePen, StopCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, SquarePen, StopCircle, X } from "lucide-react";
 import { LaptopTable } from "@/components/laptops/LaptopTable";
 import { ALL_COLUMNS } from "@/components/laptops/Columns";
 import type { Laptop } from "@/lib/types";
@@ -40,7 +40,7 @@ type SearchStats = {
 };
 
 /** Sent by the server with every search: the filters it applied and what it found. */
-type SearchData = { filters: LaptopFilters; stats: SearchStats };
+type SearchData = { filters: LaptopFilters; stats: SearchStats; language?: string };
 
 type MessagePart = {
   type?: string;
@@ -73,7 +73,11 @@ const getSearchPart = (message: ChatMessage): MessagePart | null =>
 
 const getSearchData = (part: MessagePart | null): SearchData | null => {
   if (!part || !isRecord(part.data) || !isRecord(part.data.filters)) return null;
-  return { filters: part.data.filters as LaptopFilters, stats: isRecord(part.data.stats) ? (part.data.stats as SearchStats) : {} };
+  return {
+    filters: part.data.filters as LaptopFilters,
+    stats: isRecord(part.data.stats) ? (part.data.stats as SearchStats) : {},
+    language: typeof part.data.language === "string" ? part.data.language : undefined,
+  };
 };
 
 /** Filters the server announced before running the query. */
@@ -100,25 +104,35 @@ const getSmartColumns = (filters: LaptopFilters | null | undefined): Set<string>
 const getTextContent = (message: ChatMessage): string =>
   message.parts?.filter((part) => part.type === "text").map((part) => part.text ?? "").join("") ?? "";
 
+type FilterChip = { key: keyof LaptopFilters; label: string };
+
+/** The active filters, one entry per filter the visitor can see and remove. */
+const describeFilters = (filters: LaptopFilters | null): FilterChip[] => {
+  if (!filters) return [];
+
+  const chips: FilterChip[] = [];
+  const add = (key: keyof LaptopFilters, label: string) => chips.push({ key, label });
+  if (filters.search_terms?.length) add("search_terms", filters.search_terms.slice(0, 3).join(", "));
+  if (filters.city) add("city", `in ${filters.city}`);
+  if (filters.price_max) add("price_max", `under ${filters.price_max.toLocaleString("en-US")} DH`);
+  if (filters.price_min) add("price_min", `from ${filters.price_min.toLocaleString("en-US")} DH`);
+  if (filters.ram_min) add("ram_min", `${filters.ram_min}GB+ RAM`);
+  if (filters.storage_min) add("storage_min", `${filters.storage_min}GB+ storage`);
+  if (filters.gpu_type) add("gpu_type", `${filters.gpu_type} GPU`);
+  if (filters.gpu) add("gpu", filters.gpu);
+  if (filters.refresh_rate_min) add("refresh_rate_min", `${filters.refresh_rate_min}Hz+`);
+  if (filters.is_new === true) add("is_new", "new only");
+  if (filters.is_new === false) add("is_new", "used only");
+  if (filters.touchscreen === true) add("touchscreen", "touchscreen");
+  if (filters.sort_by === "price") add("sort_by", filters.sort_order === "desc" ? "highest price first" : "cheapest first");
+  if (filters.sort_by === "value") add("sort_by", "best deals first");
+  return chips;
+};
+
 const formatFilters = (filters: LaptopFilters | null, resultCount: number) => {
   if (!filters) return resultCount > 0 ? "Best matches" : "No active filters";
-
-  const chunks: string[] = [];
-  if (filters.search_terms?.length) chunks.push(filters.search_terms.slice(0, 3).join(", "));
-  if (filters.city) chunks.push(`in ${filters.city}`);
-  if (filters.price_max) chunks.push(`under ${filters.price_max.toLocaleString("en-US")} DH`);
-  if (filters.price_min) chunks.push(`from ${filters.price_min.toLocaleString("en-US")} DH`);
-  if (filters.ram_min) chunks.push(`${filters.ram_min}GB+ RAM`);
-  if (filters.storage_min) chunks.push(`${filters.storage_min}GB+ storage`);
-  if (filters.gpu_type) chunks.push(`${filters.gpu_type} GPU`);
-  if (filters.refresh_rate_min) chunks.push(`${filters.refresh_rate_min}Hz+`);
-  if (filters.is_new === true) chunks.push("new only");
-  if (filters.is_new === false) chunks.push("used only");
-  if (filters.touchscreen === true) chunks.push("touchscreen");
-  if (filters.sort_by === "price") chunks.push(filters.sort_order === "desc" ? "highest price first" : "cheapest first");
-  if (filters.sort_by === "value") chunks.push("best deals first");
-
-  return chunks.length > 0 ? chunks.join(" · ") : "Best matches";
+  const chips = describeFilters(filters);
+  return chips.length > 0 ? chips.map((chip) => chip.label).join(" · ") : "Best matches";
 };
 
 function ChatInput({
@@ -275,15 +289,19 @@ const ResultPanel = React.memo(function ResultPanel({
   stats,
   visibleCols,
   toggleCol,
+  onRemoveFilter,
 }: {
   laptops: Laptop[];
   filters: LaptopFilters | null;
   stats: SearchStats | null;
   visibleCols: Set<string>;
   toggleCol: (key: string) => void;
+  /** Given for the latest result only: its filters can be removed one by one. */
+  onRemoveFilter?: (chip: FilterChip) => void;
 }) {
   const total = stats?.total ?? laptops.length;
   const shown = laptops.length;
+  const chips = onRemoveFilter ? describeFilters(filters) : [];
 
   return (
     <div className={cn(CONTENT_LANE_CLASS, "animate-in fade-in slide-in-from-bottom-3 duration-500")}>
@@ -293,9 +311,26 @@ const ResultPanel = React.memo(function ResultPanel({
             <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-emerald-300/80">
               Showing {shown}/{total} {total === 1 ? "match" : "matches"}
             </div>
-            <div className="mt-1 truncate text-[13px] text-muted-foreground">
-              {formatFilters(filters, laptops.length)}
-            </div>
+            {onRemoveFilter && chips.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {chips.map((chip) => (
+                  <button
+                    key={`${chip.key}-${chip.label}`}
+                    type="button"
+                    onClick={() => onRemoveFilter(chip)}
+                    title="Search again without this"
+                    className="group inline-flex cursor-pointer items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] py-0.5 pl-2.5 pr-1.5 text-[12px] text-muted-foreground transition-colors hover:border-white/25 hover:text-foreground"
+                  >
+                    {chip.label}
+                    <X className="size-3 opacity-40 transition-opacity group-hover:opacity-100" />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-1 truncate text-[13px] text-muted-foreground">
+                {formatFilters(filters, laptops.length)}
+              </div>
+            )}
           </div>
         </div>
         <LaptopTable
@@ -317,6 +352,7 @@ const ResultPanel = React.memo(function ResultPanel({
   return prev.laptops === next.laptops &&
     prev.visibleCols === next.visibleCols &&
     prev.toggleCol === next.toggleCol &&
+    prev.onRemoveFilter === next.onRemoveFilter &&
     prev.stats?.total === next.stats?.total;
 });
 
@@ -325,17 +361,19 @@ const MessageItem = React.memo(function MessageItem({
   isSearching,
   visibleCols,
   toggleCol,
+  onRemoveFilter,
 }: {
   message: ChatMessage;
   isSearching: boolean;
   visibleCols: Set<string>;
   toggleCol: (key: string) => void;
+  onRemoveFilter?: (chip: FilterChip) => void;
 }) {
   const text = getTextContent(message);
 
   if (message.role === "user") {
     return (
-      <div className={cn(CONTENT_LANE_CLASS, "flex justify-end")}>
+      <div className={cn(CONTENT_LANE_CLASS, "flex justify-end animate-in fade-in slide-in-from-bottom-2 duration-300")}>
         <div className="max-w-[88%] rounded-2xl border border-white/10 bg-white/[0.075] px-4 py-3 text-[15px] leading-6 text-foreground shadow-lg backdrop-blur-xl sm:max-w-[70%]">
           <p className="whitespace-pre-wrap break-words">{text}</p>
         </div>
@@ -361,7 +399,7 @@ const MessageItem = React.memo(function MessageItem({
 
       {/* Table first: locks layout before text streams in, prevents end-of-stream jump */}
       {showTable && (
-        <ResultPanel laptops={laptops} filters={filters} stats={stats} visibleCols={visibleCols} toggleCol={toggleCol} />
+        <ResultPanel laptops={laptops} filters={filters} stats={stats} visibleCols={visibleCols} toggleCol={toggleCol} onRemoveFilter={onRemoveFilter} />
       )}
 
       {hasText && (
@@ -377,7 +415,8 @@ const MessageItem = React.memo(function MessageItem({
   return prev.message === next.message &&
     prev.isSearching === next.isSearching &&
     prev.visibleCols === next.visibleCols &&
-    prev.toggleCol === next.toggleCol;
+    prev.toggleCol === next.toggleCol &&
+    prev.onRemoveFilter === next.onRemoveFilter;
 });
 
 function loadSavedMessages(): ChatMessage[] {
@@ -396,6 +435,10 @@ export default function AssistantPage() {
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [lastSubmittedId, setLastSubmittedId] = useState<string | null>(null);
   const activeFiltersRef = useRef<LaptopFilters>({});
+  const activeLanguageRef = useRef<string | undefined>(undefined);
+  // The scroll animation in progress, and where it is heading
+  const glideRef = useRef<{ frame: number; target: number } | null>(null);
+  const hasRevealedRef = useRef(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -466,6 +509,14 @@ export default function AssistantPage() {
     };
   }, []);
 
+  // "Near" means the end of the latest answer is on screen or close to it;
+  // otherwise the "Jump to latest" button is offered.
+  const syncNearBottom = useCallback(() => {
+    const viewport = viewportRef.current;
+    const spots = measureLatest();
+    if (viewport && spots) setIsNearBottom(viewport.scrollTop > spots.end - 180);
+  }, [measureLatest]);
+
   /**
    * Brings the latest exchange into view the way chat apps do: the question
    * goes to the top and the answer fills the space under it. If the answer is
@@ -478,8 +529,39 @@ export default function AssistantPage() {
     const spots = measureLatest();
     if (!viewport || !spots) return;
     const target = Math.max(0, spots.question, toEnd ? spots.end : Math.min(spots.end, spots.answerTop));
-    if (Math.abs(viewport.scrollTop - target) > 2) viewport.scrollTo({ top: target, behavior });
-  }, [measureLatest]);
+    if (Math.abs(viewport.scrollTop - target) <= 2) return;
+    if (behavior !== "smooth") {
+      viewport.scrollTop = target;
+      return;
+    }
+
+    // Already gliding there: let it finish instead of starting over on every word of the answer
+    const current = glideRef.current;
+    if (current && Math.abs(current.target - target) <= 2) return;
+    if (current) window.cancelAnimationFrame(current.frame);
+
+    // A hand-made glide: the browser's own smooth scroll is too quick for a
+    // whole exchange moving up the screen. A fresh move eases in and out; a
+    // change of destination mid-way only eases out, so it never stalls.
+    const from = viewport.scrollTop;
+    const distance = target - from;
+    const duration = Math.min(900, Math.max(450, Math.abs(distance) * 1.1));
+    const ease = current
+      ? (t: number) => 1 - (1 - t) ** 3
+      : (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
+    const startedAt = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      viewport.scrollTop = from + distance * ease(progress);
+      if (progress < 1 && !userScrolledRef.current) {
+        glideRef.current = { frame: window.requestAnimationFrame(step), target };
+      } else {
+        glideRef.current = null;
+        syncNearBottom();
+      }
+    };
+    glideRef.current = { frame: window.requestAnimationFrame(step), target };
+  }, [measureLatest, syncNearBottom]);
 
   const scrollToLatest = useCallback((behavior: ScrollBehavior = "smooth") => {
     userScrolledRef.current = false;
@@ -492,9 +574,14 @@ export default function AssistantPage() {
   // under the question was reserved, so the answer simply appears in view.
   useEffect(() => {
     if (userScrolledRef.current || typedMessages.length === 0) return;
-    const frame = window.requestAnimationFrame(() => revealLatest("smooth"));
+    const frame = window.requestAnimationFrame(() => {
+      // A conversation restored on page load is shown in place, not animated
+      revealLatest(hasRevealedRef.current ? "smooth" : "auto");
+      hasRevealedRef.current = true;
+      if (!glideRef.current) syncNearBottom();
+    });
     return () => window.cancelAnimationFrame(frame);
-  }, [revealLatest, status, typedMessages]);
+  }, [revealLatest, status, syncNearBottom, typedMessages]);
 
   // Keep the columns and the follow-up context in sync with the latest search
   useEffect(() => {
@@ -507,6 +594,7 @@ export default function AssistantPage() {
       if (searchId === lastSearchIdRef.current) return;
       lastSearchIdRef.current = searchId;
       activeFiltersRef.current = search.filters;
+      activeLanguageRef.current = search.language;
 
       const timer = window.setTimeout(() => setVisibleCols(getSmartColumns(search.filters)), 0);
       return () => window.clearTimeout(timer);
@@ -520,17 +608,15 @@ export default function AssistantPage() {
     setVisibleCols(new Set(DEFAULT_VISIBLE));
     setLastSubmittedId(null);
     activeFiltersRef.current = {};
+    activeLanguageRef.current = undefined;
     lastSearchIdRef.current = null;
     setIsNearBottom(true);
   }, [setMessages, stop]);
 
-  const submitMessage = useCallback(async () => {
-    const text = inputValue.trim();
+  const send = useCallback(async (text: string, extra: Record<string, unknown> = {}) => {
     if (!text || isLoading) return;
 
-    const submittedId = `submitted-${Date.now()}`;
-    setLastSubmittedId(submittedId);
-    setInputValue("");
+    setLastSubmittedId(`submitted-${Date.now()}`);
     setIsNearBottom(true);
     userScrolledRef.current = false;
 
@@ -541,9 +627,21 @@ export default function AssistantPage() {
 
     await sendMessage(
       { text },
-      { body: { question: text, previousQuestions, lastFilters: activeFiltersRef.current } },
+      { body: { question: text, previousQuestions, lastFilters: activeFiltersRef.current, ...extra } },
     );
-  }, [inputValue, isLoading, sendMessage, typedMessages]);
+  }, [isLoading, sendMessage, typedMessages]);
+
+  const submitMessage = useCallback(async () => {
+    const text = inputValue.trim();
+    if (!text || isLoading) return;
+    setInputValue("");
+    await send(text);
+  }, [inputValue, isLoading, send]);
+
+  // One click on a filter of the latest result searches again without it
+  const removeFilter = useCallback((chip: FilterChip) => {
+    void send(`Without "${chip.label}"`, { removeFilter: chip.key, language: activeLanguageRef.current });
+  }, [send]);
 
   // The latest exchange starts at the last question
   let latestTurnStart = 0;
@@ -561,6 +659,7 @@ export default function AssistantPage() {
       isSearching={streamPhase === "searching" && index === typedMessages.length - 1}
       visibleCols={visibleCols}
       toggleCol={toggleCol}
+      onRemoveFilter={!isLoading && index === typedMessages.length - 1 ? removeFilter : undefined}
     />
   );
 
@@ -581,13 +680,14 @@ export default function AssistantPage() {
       <div
         ref={viewportRef}
         onScroll={() => {
-          const viewport = viewportRef.current;
-          const spots = measureLatest();
-          if (!viewport || !spots) return;
-          // "Near" means the end of the latest answer is on screen or close to it
-          setIsNearBottom(viewport.scrollTop > spots.end - 180);
+          // Mid-glide the page is on its way to the answer: no button until it arrives
+          if (!glideRef.current) syncNearBottom();
         }}
         onWheel={() => { userScrolledRef.current = true; }}
+        onPointerDown={(event) => {
+          // Dragging the scrollbar counts as scrolling by hand
+          if (event.target === event.currentTarget) userScrolledRef.current = true;
+        }}
         onTouchMove={() => { userScrolledRef.current = true; }}
         className="h-full overflow-y-scroll overflow-x-hidden custom-scrollbar"
       >
