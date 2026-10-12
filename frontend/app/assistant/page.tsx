@@ -306,7 +306,7 @@ const ResultPanel = React.memo(function ResultPanel({
           sortOrder={filters?.sort_order ?? "desc"}
           isLocked
           density="compact"
-          maxHeightClassName="max-h-[52vh]"
+          maxHeightClassName="max-h-[max(14rem,min(52vh,calc(100dvh-29rem)))]"
           containerClassName="rounded-none border-0 bg-transparent"
           onSortChange={NOOP}
         />
@@ -355,7 +355,7 @@ const MessageItem = React.memo(function MessageItem({
   const planned = isSearching ? getPlannedFilters(message) : null;
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-4" data-answer>
 
       {planned && <SearchingPanel filters={planned} />}
 
@@ -397,6 +397,12 @@ export default function AssistantPage() {
   const [lastSubmittedId, setLastSubmittedId] = useState<string | null>(null);
   const activeFiltersRef = useRef<LaptopFilters>({});
   const viewportRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
+  const latestTurnRef = useRef<HTMLDivElement>(null);
+  const answerEndRef = useRef<HTMLDivElement>(null);
+  // True once the visitor scrolls by hand during an answer: from then on the page stays where they put it
+  const userScrolledRef = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastSearchIdRef = useRef<string | null>(null);
 
@@ -434,29 +440,61 @@ export default function AssistantPage() {
     });
   }, []);
 
-  const scrollToLatest = useCallback((behavior: ScrollBehavior = "smooth") => {
+  /**
+   * Where the page should rest for the latest exchange, as scroll offsets:
+   *   question: the question sits right under the page title
+   *   answerTop: the answer starts right under the page title
+   *   end:      the last line of the answer sits just above the composer
+   */
+  const measureLatest = useCallback(() => {
     const viewport = viewportRef.current;
-    if (viewport) {
-      viewport.scrollTo({ top: viewport.scrollHeight, behavior });
-    }
-    setIsNearBottom(true);
+    const turn = latestTurnRef.current;
+    const end = answerEndRef.current;
+    if (!viewport || !turn || !end) return null;
+
+    const frame = viewport.getBoundingClientRect();
+    const offsetOf = (element: Element, edge: "top" | "bottom") =>
+      element.getBoundingClientRect()[edge] - frame.top + viewport.scrollTop;
+    const topSpace = (titleRef.current?.offsetHeight ?? 56) + 8;
+    const visibleHeight = viewport.clientHeight - (composerRef.current?.offsetHeight ?? 110) - 12;
+    const answer = turn.querySelector("[data-answer]");
+
+    return {
+      question: offsetOf(turn, "top") - topSpace,
+      answerTop: answer ? offsetOf(answer, "top") - topSpace : Number.POSITIVE_INFINITY,
+      end: offsetOf(end, "bottom") - visibleHeight,
+    };
   }, []);
 
-  // Scroll to bottom only on new user messages and when stream fully settles , 
-  // NOT on every streaming tick, to avoid fighting native scroll anchoring mid-stream.
-  const messageCountRef = useRef(0);
-  useEffect(() => {
-    const newCount = typedMessages.length;
-    const countChanged = newCount !== messageCountRef.current;
-    messageCountRef.current = newCount;
+  /**
+   * Brings the latest exchange into view the way chat apps do: the question
+   * goes to the top and the answer fills the space under it. If the answer is
+   * taller than the screen, the page follows it down, but never past the point
+   * where the answer's first line would leave the screen (`toEnd` lifts that
+   * limit, for the "Jump to latest" button).
+   */
+  const revealLatest = useCallback((behavior: ScrollBehavior = "smooth", toEnd = false) => {
+    const viewport = viewportRef.current;
+    const spots = measureLatest();
+    if (!viewport || !spots) return;
+    const target = Math.max(0, spots.question, toEnd ? spots.end : Math.min(spots.end, spots.answerTop));
+    if (Math.abs(viewport.scrollTop - target) > 2) viewport.scrollTo({ top: target, behavior });
+  }, [measureLatest]);
 
-    if (!isNearBottom) return;
-    // Fire on new message arrival or when stream ends (not on every streaming tick)
-    if (countChanged || status === "ready" || status === "error") {
-      const frame = window.requestAnimationFrame(() => scrollToLatest("smooth"));
-      return () => window.cancelAnimationFrame(frame);
-    }
-  }, [isNearBottom, scrollToLatest, status, typedMessages.length]);
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "smooth") => {
+    userScrolledRef.current = false;
+    revealLatest(behavior, true);
+    setIsNearBottom(true);
+  }, [revealLatest]);
+
+  // Runs when a question is sent and on every piece of the answer that arrives
+  // (placeholder, table, each word). Most of the time nothing moves: the space
+  // under the question was reserved, so the answer simply appears in view.
+  useEffect(() => {
+    if (userScrolledRef.current || typedMessages.length === 0) return;
+    const frame = window.requestAnimationFrame(() => revealLatest("smooth"));
+    return () => window.cancelAnimationFrame(frame);
+  }, [revealLatest, status, typedMessages]);
 
   // Keep the columns and the follow-up context in sync with the latest search
   useEffect(() => {
@@ -494,6 +532,7 @@ export default function AssistantPage() {
     setLastSubmittedId(submittedId);
     setInputValue("");
     setIsNearBottom(true);
+    userScrolledRef.current = false;
 
     const previousQuestions = typedMessages
       .filter((message) => message.role === "user")
@@ -505,6 +544,25 @@ export default function AssistantPage() {
       { body: { question: text, previousQuestions, lastFilters: activeFiltersRef.current } },
     );
   }, [inputValue, isLoading, sendMessage, typedMessages]);
+
+  // The latest exchange starts at the last question
+  let latestTurnStart = 0;
+  for (let index = typedMessages.length - 1; index >= 0; index -= 1) {
+    if (typedMessages[index].role === "user") {
+      latestTurnStart = index;
+      break;
+    }
+  }
+
+  const renderMessage = (message: ChatMessage, index: number) => (
+    <MessageItem
+      key={message.id}
+      message={message}
+      isSearching={streamPhase === "searching" && index === typedMessages.length - 1}
+      visibleCols={visibleCols}
+      toggleCol={toggleCol}
+    />
+  );
 
   const errorMessage = useMemo(() => {
     if (!error) return null;
@@ -524,13 +582,16 @@ export default function AssistantPage() {
         ref={viewportRef}
         onScroll={() => {
           const viewport = viewportRef.current;
-          if (!viewport) return;
-          const distance = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
-          setIsNearBottom(distance < 180);
+          const spots = measureLatest();
+          if (!viewport || !spots) return;
+          // "Near" means the end of the latest answer is on screen or close to it
+          setIsNearBottom(viewport.scrollTop > spots.end - 180);
         }}
+        onWheel={() => { userScrolledRef.current = true; }}
+        onTouchMove={() => { userScrolledRef.current = true; }}
         className="h-full overflow-y-scroll overflow-x-hidden custom-scrollbar"
       >
-        <div className="sticky top-0 z-30 pointer-events-none">
+        <div ref={titleRef} className="sticky top-0 z-30 pointer-events-none">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background via-background/95 to-transparent" />
           <div className="relative mx-auto max-w-[1100px] px-6 pt-3 pb-3 pointer-events-auto">
             <div className="flex items-baseline justify-between relative z-10">
@@ -563,19 +624,18 @@ export default function AssistantPage() {
               </div>
             ) : (
               <div className="space-y-7 px-0 pb-24 pt-8">
-                {typedMessages.map((message, index) => (
-                  <MessageItem
-                    key={message.id}
-                    message={message}
-                    isSearching={streamPhase === "searching" && index === typedMessages.length - 1}
-                    visibleCols={visibleCols}
-                    toggleCol={toggleCol}
-                  />
-                ))}
+                {typedMessages.slice(0, latestTurnStart).map(renderMessage)}
 
-                <StreamingIndicator phase={streamPhase} />
+                {/* The latest question and its answer. The reserved height is what lets the
+                    question rise to the top of the screen before the answer exists. */}
+                <div ref={latestTurnRef} className="min-h-[calc(100dvh-7rem)] space-y-7">
+                  {typedMessages.slice(latestTurnStart).map((message, index) => renderMessage(message, latestTurnStart + index))}
 
-                {errorMessage && lastSubmittedId && <ErrorLine message={errorMessage} />}
+                  <StreamingIndicator phase={streamPhase} />
+
+                  {errorMessage && lastSubmittedId && <ErrorLine message={errorMessage} />}
+                  <div ref={answerEndRef} className="!mt-0 h-px w-full" />
+                </div>
               </div>
             )}
             <div ref={bottomRef} className="h-px w-full" style={{ overflowAnchor: "auto" }} />
@@ -595,7 +655,7 @@ export default function AssistantPage() {
       )}
 
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-28 bg-gradient-to-t from-background to-transparent" />
-      <div className="fixed inset-x-0 bottom-0 z-40 pb-[calc(0.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+      <div ref={composerRef} className="fixed inset-x-0 bottom-0 z-40 pb-[calc(0.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div className={LANE_CLASS}>
           <ChatInput
             value={inputValue}
