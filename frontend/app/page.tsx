@@ -39,7 +39,7 @@ function LaptopsSkeleton() {
         <div className="h-full overflow-y-auto custom-scrollbar border-none outline-none">
             <div className="mx-auto max-w-[1100px] px-6 pt-3 pb-8">
                 <div className="flex items-baseline justify-between mb-[14px]">
-                    <h1 className="text-2xl font-black tracking-tight">Laptops</h1>
+                    <h1 className="text-3xl font-black tracking-tight">Laptops</h1>
                     <div className="flex items-center gap-3">
                         <div className="h-5 w-32 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
                     </div>

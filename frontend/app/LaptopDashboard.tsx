@@ -251,28 +251,29 @@ export default function LaptopDashboard({
                     className="cursor-pointer hover:opacity-70 transition-opacity active:scale-95 select-none"
                     title="Reset all filters"
                 >
-                    <h1 className="text-2xl font-black tracking-tight">Laptops</h1>
+                    <h1 className="text-3xl font-black tracking-tight">Laptops</h1>
                 </div>
 
                     {/* Stats row */}
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <p>{total.toLocaleString("en-US")} laptops available</p>
-                    </div>
+                    <p className="text-sm text-muted-foreground sm:hidden">{total.toLocaleString("en-US")} laptops for sale</p>
                 </div>
 
                 {/* search + sort + filter bar */}
                 <div className="flex items-center gap-1 w-full">
-                    <form onSubmit={handleSearch} className="min-w-0 flex-1">
+                    <form onSubmit={handleSearch} className="relative min-w-0 flex-1">
                         <Input
                             placeholder="Search laptops..."
                             value={searchInput}
                             onChange={(e) => setSearchInput(e.target.value)}
-                            className="w-full"
+                            className="w-full pr-10"
                         />
+                        <button type="submit" aria-label="Search" title="Search" className="absolute right-1 top-1/2 inline-flex size-8 -translate-y-1/2 cursor-pointer items-center justify-center text-muted-foreground transition-colors duration-200 hover:text-foreground">
+                            <Search className="size-[18px]" strokeWidth={2.25} />
+                        </button>
                     </form>
-                    <button type="button" onClick={handleSearch} aria-label="Search" title="Search" className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center text-muted-foreground transition-colors duration-200 hover:text-foreground">
-                        <Search className="size-5" strokeWidth={2.25} />
-                    </button>
+                    <p className="hidden shrink-0 whitespace-nowrap pl-3 pr-1 text-sm text-muted-foreground sm:block">
+                        {total.toLocaleString("en-US")} laptops for sale
+                    </p>
                     <Select value={sortBy} onValueChange={(v) => {
                         const params = new URLSearchParams(searchParams.toString());
                         params.set("sortBy", v || "");

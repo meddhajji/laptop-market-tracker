@@ -5,7 +5,7 @@ import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { ArrowDown, ArrowUp, Loader2, SquarePen, StopCircle, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CirclePlus, Loader2, StopCircle, X } from "lucide-react";
 import { LaptopTable } from "@/components/laptops/LaptopTable";
 import { ALL_COLUMNS } from "@/components/laptops/Columns";
 import type { Laptop } from "@/lib/types";
@@ -694,17 +694,18 @@ export default function AssistantPage() {
         <div ref={titleRef} className="sticky top-0 z-30 pointer-events-none">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background via-background/95 to-transparent" />
           <div className="relative mx-auto max-w-[1100px] px-6 pt-3 pb-3 pointer-events-auto">
-            <div className="flex items-baseline justify-between relative z-10">
-              <h1 className="text-2xl font-black tracking-tight drop-shadow-md">AI Assistant</h1>
+            <div className="flex items-center justify-between relative z-10">
+              <h1 className="text-3xl font-black tracking-tight drop-shadow-md">AI Assistant</h1>
 
               {hasMessages && (
                 <button
                   type="button"
                   onClick={resetChat}
-                  className="flex cursor-pointer flex-col items-center gap-1 text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label="New chat"
+                  title="New chat"
+                  className="cursor-pointer text-muted-foreground transition-colors duration-200 hover:text-foreground"
                 >
-                  <SquarePen className="size-4" />
-                  <span className="text-[10px] font-medium leading-none">New chat</span>
+                  <CirclePlus className="size-7" strokeWidth={1.75} />
                 </button>
               )}
             </div>
