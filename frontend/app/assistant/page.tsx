@@ -701,7 +701,7 @@ export default function AssistantPage() {
                 <div className="w-full max-w-[900px] text-center">
                   <h2 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">Find your laptop</h2>
                   <p className="mx-auto mt-3 max-w-xl text-[14px] leading-6 text-muted-foreground">
-                    Search by Brand, model, city, budget, or specs and the assistant will bring reliable items from the laptops database.
+                    Search by brand, model, city, budget, or specs and the assistant will bring reliable items from the laptops database.
                   </p>
                 </div>
               </div>
