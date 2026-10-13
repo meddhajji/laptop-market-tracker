@@ -1,5 +1,6 @@
 "use client";
 
+import { Search } from "lucide-react";
 import { useState, useEffect, useTransition, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Laptop } from "@/lib/types";
@@ -271,8 +272,8 @@ export default function LaptopDashboard({
                             className="w-full"
                         />
                     </form>
-                    <Button variant="outline" onClick={handleSearch} className="hidden sm:inline-flex w-[87px] shrink-0 justify-center">
-                        Search
+                    <Button variant="outline" onClick={handleSearch} aria-label="Search" title="Search" className="hidden sm:inline-flex w-10 px-0 shrink-0 justify-center">
+                        <Search className="size-4" />
                     </Button>
                     <Select value={sortBy} onValueChange={(v) => {
                         const params = new URLSearchParams(searchParams.toString());
