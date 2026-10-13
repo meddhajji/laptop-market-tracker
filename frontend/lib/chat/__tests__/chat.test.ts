@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cleanFilters, mergeFilters } from "../filters";
-import { plainSummary } from "../llm";
+import { offTopicReply, plainSummary } from "../llm";
 import { evaluate, LIMITS, visitorKey } from "../rate-limit";
 import { MAX_QUESTION_CHARS, parseChatRequest } from "../request";
 import { buildSearchQuery } from "../search";
@@ -190,6 +190,18 @@ describe("rate limit", () => {
         expect(visitorKey("203.0.113.7", "salt")).toBe(key);
         expect(visitorKey("203.0.113.8", "salt")).not.toBe(key);
         expect(visitorKey("203.0.113.7", "other")).not.toBe(key);
+    });
+});
+
+describe("offTopicReply", () => {
+    it("uses the model's short reply, stripped of links and markup", () => {
+        expect(offTopicReply({ language: "en", reply: "Hey there! **What laptop** do you need? See https://evil.example/x" }))
+            .toBe("Hey there! What laptop do you need? See");
+    });
+
+    it("falls back to a fixed sentence when the reply is empty, and caps long ones", () => {
+        expect(offTopicReply({ language: "fr", reply: "  " })).toContain("PC portables");
+        expect(offTopicReply({ language: "en", reply: "a".repeat(900) })).toHaveLength(280);
     });
 });
 

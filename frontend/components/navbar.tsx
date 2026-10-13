@@ -22,7 +22,7 @@ export function Navbar() {
 
     return (
         <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+            <nav className="relative mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
                 <div className="flex items-center gap-2">
                     {links.map(({ path, href, label, icon: Icon }) => (
                         <Link
@@ -41,6 +41,14 @@ export function Navbar() {
                         </Link>
                     ))}
                 </div>
+                {/* Page title, centred on the bar whatever sits on either side */}
+                <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-2xl font-black tracking-tight">
+                    {pathname === "/assistant" ? "AI Assistant" : pathname === "/" ? (
+                        <Link href="/" title="Reset all filters" className="pointer-events-auto transition-opacity hover:opacity-70">
+                            Laptops
+                        </Link>
+                    ) : null}
+                </h1>
                 <a
                     href="https://github.com/meddhajji/laptop-market-tracker"
                     target="_blank"

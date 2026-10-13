@@ -239,28 +239,12 @@ export default function LaptopDashboard({
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar border-none outline-none">
-            <div className="mx-auto max-w-[1100px] px-6 pt-3 pb-8">
-                {/* Header Row */}
-                <div className="flex flex-wrap items-baseline justify-between gap-x-4 mb-[14px]">
-                <div 
-                    onClick={() => {
-                        setSearchInput("");
-                        setDraftFilters(parseFiltersFromURL(new URLSearchParams()));
-                        router.push("/");
-                    }}
-                    className="cursor-pointer hover:opacity-70 transition-opacity active:scale-95 select-none"
-                    title="Reset all filters"
-                >
-                    <h1 className="text-3xl font-black tracking-tight">Laptops</h1>
-                </div>
+            <div className="mx-auto max-w-[1100px] px-6 pt-1 pb-8">
+                <p className="mb-2 text-center text-sm text-muted-foreground sm:hidden">{total.toLocaleString("en-US")} laptops for sale</p>
 
-                    {/* Stats row */}
-                    <p className="text-sm text-muted-foreground sm:hidden">{total.toLocaleString("en-US")} laptops for sale</p>
-                </div>
-
-                {/* search + sort + filter bar */}
-                <div className="flex items-center gap-1 w-full">
-                    <form onSubmit={handleSearch} className="relative min-w-0 flex-1">
+                {/* search + count + sort + filter bar, centred as one group */}
+                <div className="flex w-full items-center justify-center gap-1">
+                    <form onSubmit={handleSearch} className="relative min-w-0 flex-1 sm:max-w-[520px]">
                         <Input
                             placeholder="Search laptops..."
                             value={searchInput}

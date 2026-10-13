@@ -66,7 +66,7 @@ export async function POST(req: Request) {
             if (!removal && !interpretation) {
                 say(UNAVAILABLE_REPLY);
             } else if (interpretation?.kind === "other") {
-                say(offTopicReply(interpretation.language));
+                say(offTopicReply(interpretation));
             } else {
                 const requested = cleanFilters(interpretation?.filters);
                 const filters = removal

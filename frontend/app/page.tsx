@@ -37,15 +37,9 @@ function isDefaultQuery(params: LaptopSearchParams) {
 function LaptopsSkeleton() {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar border-none outline-none">
-            <div className="mx-auto max-w-[1100px] px-6 pt-3 pb-8">
-                <div className="flex items-baseline justify-between mb-[14px]">
-                    <h1 className="text-3xl font-black tracking-tight">Laptops</h1>
-                    <div className="flex items-center gap-3">
-                        <div className="h-5 w-32 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
-                    </div>
-                </div>
-                <div className="flex gap-2 items-center w-full mb-5">
-                    <div className="h-10 flex-1 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
+            <div className="mx-auto max-w-[1100px] px-6 pt-1 pb-8">
+                <div className="flex gap-2 items-center justify-center w-full mb-5">
+                    <div className="h-9 flex-1 sm:max-w-[520px] bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
                     <div className="h-9 w-9 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
                     <div className="h-9 w-24 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
                     <div className="h-9 w-9 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>

@@ -693,10 +693,8 @@ export default function AssistantPage() {
       >
         <div ref={titleRef} className="sticky top-0 z-30 pointer-events-none">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background via-background/95 to-transparent" />
-          <div className="relative mx-auto max-w-[1100px] px-6 pt-3 pb-3 pointer-events-auto">
-            <div className="flex items-center justify-between relative z-10">
-              <h1 className="text-3xl font-black tracking-tight drop-shadow-md">AI Assistant</h1>
-
+          <div className="relative mx-auto max-w-[1100px] px-6 pt-1 pb-2 pointer-events-auto">
+            <div className="relative z-10 flex min-h-7 items-center justify-end">
               {hasMessages && (
                 <button
                   type="button"
