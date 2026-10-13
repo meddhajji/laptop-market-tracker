@@ -317,7 +317,7 @@ export default function LaptopDashboard({
                 </div>
 
                 {/* data table */}
-                <div className="mt-5 lg:mt-0">
+                <div className="mt-5 lg:mt-1">
                     <LaptopTable
                         laptops={laptops}
                         loading={isPending}

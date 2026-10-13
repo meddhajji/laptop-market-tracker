@@ -45,7 +45,7 @@ function LaptopsSkeleton() {
                     <div className="h-9 w-24 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
                     <div className="h-9 w-9 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
                 </div>
-                <div className="h-[560px] bg-black/5 dark:bg-white/5 rounded-2xl border border-white/10 animate-pulse"></div>
+                <div className="h-[560px] lg:mt-1 bg-black/5 dark:bg-white/5 rounded-2xl border border-white/10 animate-pulse"></div>
             </div>
         </div>
     );
