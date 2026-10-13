@@ -306,13 +306,12 @@ const ResultPanel = React.memo(function ResultPanel({
   return (
     <div className={cn(CONTENT_LANE_CLASS, "animate-in fade-in slide-in-from-bottom-3 duration-500")}>
       <div className="rounded-2xl border border-white/10 bg-white/[0.045] shadow-[0_20px_60px_rgba(0,0,0,0.32)] backdrop-blur-xl">
-        <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <div className="text-[12px] font-semibold uppercase tracking-[0.16em] text-emerald-300/80">
-              Showing {shown}/{total} {total === 1 ? "match" : "matches"}
+        <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="shrink-0 text-[12px] font-semibold uppercase tracking-[0.16em] text-emerald-300/80">
+              {shown}/{total} {total === 1 ? "match" : "matches"} shown
             </div>
             {onRemoveFilter && chips.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 sm:justify-end">
                 {chips.map((chip) => (
                   <button
                     key={`${chip.key}-${chip.label}`}
@@ -327,11 +326,10 @@ const ResultPanel = React.memo(function ResultPanel({
                 ))}
               </div>
             ) : (
-              <div className="mt-1 truncate text-[13px] text-muted-foreground">
+              <div className="min-w-0 truncate text-[13px] text-muted-foreground">
                 {formatFilters(filters, laptops.length)}
               </div>
             )}
-          </div>
         </div>
         <LaptopTable
           laptops={laptops}
@@ -691,23 +689,9 @@ export default function AssistantPage() {
         onTouchMove={() => { userScrolledRef.current = true; }}
         className="h-full overflow-y-scroll overflow-x-hidden custom-scrollbar"
       >
-        <div ref={titleRef} className="sticky top-0 z-30 pointer-events-none">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background via-background/95 to-transparent" />
-          <div className="relative mx-auto max-w-[1100px] px-6 pt-1 pb-2 pointer-events-auto">
-            <div className="relative z-10 flex min-h-7 items-center justify-end">
-              {hasMessages && (
-                <button
-                  type="button"
-                  onClick={resetChat}
-                  aria-label="New chat"
-                  title="New chat"
-                  className="cursor-pointer text-muted-foreground transition-colors duration-200 hover:text-foreground"
-                >
-                  <CirclePlus className="size-7" strokeWidth={1.75} />
-                </button>
-              )}
-            </div>
-          </div>
+        {/* Messages fade out under the header instead of being cut by it */}
+        <div ref={titleRef} className="pointer-events-none sticky top-0 z-30 h-3">
+          <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-background to-transparent" />
         </div>
 
         <div className="mx-auto max-w-[1100px] px-6 pb-8">
@@ -722,7 +706,7 @@ export default function AssistantPage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-7 px-0 pb-24 pt-8">
+              <div className="space-y-7 px-0 pb-24 pt-4">
                 {typedMessages.slice(0, latestTurnStart).map(renderMessage)}
 
                 {/* The latest question and its answer. The reserved height is what lets the
@@ -756,13 +740,30 @@ export default function AssistantPage() {
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 h-28 bg-gradient-to-t from-background to-transparent" />
       <div ref={composerRef} className="fixed inset-x-0 bottom-0 z-40 pb-[calc(0.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div className={LANE_CLASS}>
-          <ChatInput
-            value={inputValue}
-            isLoading={isLoading}
-            onChange={setInputValue}
-            onSubmit={submitMessage}
-            onStop={stop}
-          />
+          {/* New chat sits beside the prompt bar: in the margin on wide screens, so the
+              bar keeps the width of the results above it */}
+          <div className="relative flex items-end gap-2">
+            {hasMessages && (
+              <button
+                type="button"
+                onClick={resetChat}
+                aria-label="New chat"
+                title="New chat"
+                className="mb-4 shrink-0 cursor-pointer text-muted-foreground transition-colors duration-200 hover:text-foreground lg:absolute lg:bottom-4 lg:right-full lg:mb-0 lg:mr-3"
+              >
+                <CirclePlus className="size-7" strokeWidth={1.75} />
+              </button>
+            )}
+            <div className="min-w-0 flex-1">
+              <ChatInput
+                value={inputValue}
+                isLoading={isLoading}
+                onChange={setInputValue}
+                onSubmit={submitMessage}
+                onStop={stop}
+              />
+            </div>
+          </div>
           <p className="mt-2 text-center text-[11px] text-muted-foreground/60 leading-relaxed">
             AI answers, powered by Groq · Not affiliated with Avito.ma
           </p>

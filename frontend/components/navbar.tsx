@@ -22,8 +22,11 @@ export function Navbar() {
 
     return (
         <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <nav className="relative mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-                <div className="flex items-center gap-2">
+            {/* The middle column is as wide as the page content (the table), so the
+                title lines up with it; the dashboard lays its search row over the
+                same column (see LaptopDashboard). */}
+            <nav className="grid h-14 grid-cols-[minmax(5rem,1fr)_minmax(0,1052px)_minmax(5rem,1fr)] items-center px-4">
+                <div className="flex items-center gap-1">
                     {links.map(({ path, href, label, icon: Icon }) => (
                         <Link
                             key={path}
@@ -41,10 +44,9 @@ export function Navbar() {
                         </Link>
                     ))}
                 </div>
-                {/* Page title, centred on the bar whatever sits on either side */}
-                <h1 className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-2xl font-black tracking-tight">
+                <h1 className="flex justify-center text-2xl font-black tracking-tight lg:justify-start">
                     {pathname === "/assistant" ? "AI Assistant" : pathname === "/" ? (
-                        <Link href="/" title="Reset all filters" className="pointer-events-auto transition-opacity hover:opacity-70">
+                        <Link href="/" title="Reset all filters" className="transition-opacity hover:opacity-70">
                             Laptops
                         </Link>
                     ) : null}
@@ -55,7 +57,7 @@ export function Navbar() {
                     rel="noopener noreferrer"
                     aria-label="Source code on GitHub"
                     title="Source code on GitHub"
-                    className="p-2 text-muted-foreground/50 transition-colors duration-200 hover:text-foreground"
+                    className="justify-self-end p-2 text-muted-foreground/50 transition-colors duration-200 hover:text-foreground"
                 >
                     <Github className="size-5" strokeWidth={1.75} />
                 </a>

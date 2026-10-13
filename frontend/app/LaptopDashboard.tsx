@@ -238,13 +238,19 @@ export default function LaptopDashboard({
     ].filter(Boolean).length;
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar border-none outline-none">
+        <div className="h-full overflow-y-auto custom-scrollbar border-none outline-none lg:[scrollbar-gutter:stable_both-edges]">
             <div className="mx-auto max-w-[1100px] px-6 pt-1 pb-8">
                 <p className="mb-2 text-center text-sm text-muted-foreground sm:hidden">{total.toLocaleString("en-US")} laptops for sale</p>
 
-                {/* search + count + sort + filter bar, centred as one group */}
-                <div className="flex w-full items-center justify-center gap-1">
-                    <form onSubmit={handleSearch} className="relative min-w-0 flex-1 sm:max-w-[520px]">
+                {/* Search, sort, filters and the count. On wide screens the row is laid over
+                    the header, on the navbar's own grid: it starts after the page title and
+                    ends at the table's right edge. */}
+                <div className="lg:pointer-events-none lg:fixed lg:inset-x-0 lg:top-0 lg:z-50 lg:grid lg:h-14 lg:grid-cols-[minmax(5rem,1fr)_minmax(0,1052px)_minmax(5rem,1fr)] lg:items-center lg:px-4">
+                <div className="flex items-center lg:col-start-2 lg:gap-6">
+                    {/* keeps the room the title takes in the header underneath */}
+                    <span aria-hidden className="invisible hidden text-2xl font-black tracking-tight lg:block">Laptops</span>
+                <div className="flex min-w-0 flex-1 items-center gap-1 lg:pointer-events-auto">
+                    <form onSubmit={handleSearch} className="relative min-w-0 flex-1">
                         <Input
                             placeholder="Search laptops..."
                             value={searchInput}
@@ -255,9 +261,6 @@ export default function LaptopDashboard({
                             <Search className="size-[18px]" strokeWidth={2.25} />
                         </button>
                     </form>
-                    <p className="hidden shrink-0 whitespace-nowrap pl-3 pr-1 text-sm text-muted-foreground sm:block">
-                        {total.toLocaleString("en-US")} laptops for sale
-                    </p>
                     <Select value={sortBy} onValueChange={(v) => {
                         const params = new URLSearchParams(searchParams.toString());
                         params.set("sortBy", v || "");
@@ -266,7 +269,7 @@ export default function LaptopDashboard({
                         params.set("page", "0");
                         updateURL(params);
                     }}>
-                        <SelectTrigger className="w-auto shrink-0 cursor-pointer gap-1 border-0 bg-transparent px-1.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground dark:bg-transparent dark:hover:bg-transparent [&_svg]:size-5 [&_svg]:text-current [&_svg]:transition-transform [&_svg]:duration-300 data-[popup-open]:text-foreground data-[popup-open]:[&_svg]:-rotate-180">
+                        <SelectTrigger className="ml-2 w-auto shrink-0 cursor-pointer gap-1 border-0 bg-transparent px-1.5text-sm font-medium text-muted-foreground shadow-none hover:text-foreground dark:bg-transparent dark:hover:bg-transparent [&_svg]:size-5 [&_svg]:text-current [&_svg]:transition-transform [&_svg]:duration-300 data-[popup-open]:text-foreground data-[popup-open]:[&_svg]:-rotate-180">
                             <SelectValue>{(value: SortOption) => SORT_LABELS[value] ?? SORT_LABELS.deal}</SelectValue>
                         </SelectTrigger>
                         <SelectContent
@@ -306,10 +309,15 @@ export default function LaptopDashboard({
                             clearFilters={clearFilters}
                         />
                     </Dialog>
+                    <p className="hidden shrink-0 whitespace-nowrap pl-2 text-sm text-muted-foreground sm:block">
+                        {total.toLocaleString("en-US")} laptops for sale
+                    </p>
+                </div>
+                </div>
                 </div>
 
                 {/* data table */}
-                <div className="mt-5">
+                <div className="mt-5 lg:mt-1">
                     <LaptopTable
                         laptops={laptops}
                         loading={isPending}
