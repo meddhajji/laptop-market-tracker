@@ -1,11 +1,10 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { useState, useEffect, useTransition, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Laptop } from "@/lib/types";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import {
     Select,
@@ -14,7 +13,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 
 // Modularized components
 import { FilterDialog } from "@/components/laptops/FilterDialog";
@@ -26,7 +24,7 @@ const PAGE_SIZE = 12;
 
 type SortOption = "deal" | "score" | "price" | "newest";
 
-const SORT_LABELS: Record<SortOption, string> = { deal: "Best deal", score: "Score", price: "Price", newest: "Newest" };
+const SORT_LABELS: Record<SortOption, string> = { deal: "Best deals", score: "Score", price: "Price", newest: "Newest" };
 
 interface Filters {
     brand: string;
@@ -263,8 +261,8 @@ export default function LaptopDashboard({
                 </div>
 
                 {/* search + sort + filter bar */}
-                <div className="flex flex-wrap gap-2 items-center w-full">
-                    <form onSubmit={handleSearch} className="basis-full sm:basis-0 sm:flex-1">
+                <div className="flex items-center gap-1 w-full">
+                    <form onSubmit={handleSearch} className="min-w-0 flex-1">
                         <Input
                             placeholder="Search laptops..."
                             value={searchInput}
@@ -272,9 +270,9 @@ export default function LaptopDashboard({
                             className="w-full"
                         />
                     </form>
-                    <Button variant="outline" onClick={handleSearch} aria-label="Search" title="Search" className="hidden sm:inline-flex w-10 px-0 shrink-0 justify-center">
-                        <Search className="size-4" />
-                    </Button>
+                    <button type="button" onClick={handleSearch} aria-label="Search" title="Search" className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center text-muted-foreground transition-colors duration-200 hover:text-foreground">
+                        <Search className="size-5" strokeWidth={2.25} />
+                    </button>
                     <Select value={sortBy} onValueChange={(v) => {
                         const params = new URLSearchParams(searchParams.toString());
                         params.set("sortBy", v || "");
@@ -283,7 +281,7 @@ export default function LaptopDashboard({
                         params.set("page", "0");
                         updateURL(params);
                     }}>
-                        <SelectTrigger className="flex-1 sm:flex-none sm:w-[112px] shrink-0">
+                        <SelectTrigger className="w-auto shrink-0 cursor-pointer gap-1 border-0 bg-transparent px-1.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground dark:bg-transparent dark:hover:bg-transparent [&_svg]:size-5 [&_svg]:text-current [&_svg]:transition-transform [&_svg]:duration-300 data-[popup-open]:text-foreground data-[popup-open]:[&_svg]:-rotate-180">
                             <SelectValue>{(value: SortOption) => SORT_LABELS[value] ?? SORT_LABELS.deal}</SelectValue>
                         </SelectTrigger>
                         <SelectContent
@@ -295,7 +293,7 @@ export default function LaptopDashboard({
                             <p className="px-3 pt-1 pb-2 text-[10px] font-semibold tracking-widest uppercase text-zinc-500 select-none">
                                 Sort by
                             </p>
-                            <SelectItem value="deal"    className="rounded-none px-3 py-2 text-sm font-medium text-zinc-300 cursor-pointer transition-all duration-150 focus:bg-white/[0.08] focus:text-white">Best deal</SelectItem>
+                            <SelectItem value="deal"    className="rounded-none px-3 py-2 text-sm font-medium text-zinc-300 cursor-pointer transition-all duration-150 focus:bg-white/[0.08] focus:text-white">Best deals</SelectItem>
                             <SelectItem value="score"   className="rounded-none px-3 py-2 text-sm font-medium text-zinc-300 cursor-pointer transition-all duration-150 focus:bg-white/[0.08] focus:text-white">Score</SelectItem>
                             <SelectItem value="price"   className="rounded-none px-3 py-2 text-sm font-medium text-zinc-300 cursor-pointer transition-all duration-150 focus:bg-white/[0.08] focus:text-white">Price</SelectItem>
                             <SelectItem value="newest"  className="rounded-none px-3 pb-[calc(0.5rem+1.5px*2)] pt-2 text-sm font-medium text-zinc-300 cursor-pointer transition-all duration-150 focus:bg-white/[0.08] focus:text-white">Newest</SelectItem>
@@ -305,14 +303,14 @@ export default function LaptopDashboard({
                         <DialogTrigger
                             id="filters-trigger"
                             render={
-                                <Button variant="outline" className="flex-1 sm:flex-none sm:w-[87px] shrink-0 justify-center">
-                                    Filters
+                                <button type="button" aria-label="Filters" title="Filters" className="relative inline-flex size-9 shrink-0 cursor-pointer items-center justify-center text-muted-foreground transition-colors duration-200 hover:text-foreground">
+                                    <SlidersHorizontal className="size-5" strokeWidth={2.25} />
                                     {activeFilterCount > 0 && (
-                                        <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px] text-emerald-500 leading-none">
+                                        <span className="absolute right-0 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold leading-none text-black">
                                             {activeFilterCount}
-                                        </Badge>
+                                        </span>
                                     )}
-                                </Button>
+                                </button>
                             }
                         />
                         <FilterDialog

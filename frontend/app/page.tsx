@@ -46,9 +46,9 @@ function LaptopsSkeleton() {
                 </div>
                 <div className="flex gap-2 items-center w-full mb-5">
                     <div className="h-10 flex-1 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-10 w-10 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-10 w-[87px] bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-10 w-[87px] bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-9 w-9 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-9 w-24 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-9 w-9 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
                 </div>
                 <div className="h-[560px] bg-black/5 dark:bg-white/5 rounded-2xl border border-white/10 animate-pulse"></div>
             </div>
