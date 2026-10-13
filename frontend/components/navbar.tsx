@@ -44,7 +44,7 @@ export function Navbar() {
                         </Link>
                     ))}
                 </div>
-                <h1 className="flex justify-center text-2xl font-black tracking-tight lg:justify-start">
+                <h1 className="flex -translate-y-[1.5px] justify-center text-2xl font-black tracking-tight lg:justify-start">
                     {pathname === "/assistant" ? "AI Assistant" : pathname === "/" ? (
                         <Link href="/" title="Reset all filters" className="transition-opacity hover:opacity-70">
                             Laptops
