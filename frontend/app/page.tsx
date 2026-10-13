@@ -37,7 +37,7 @@ function isDefaultQuery(params: LaptopSearchParams) {
 function LaptopsSkeleton() {
     return (
         <div className="h-full overflow-y-auto custom-scrollbar border-none outline-none lg:[scrollbar-gutter:stable_both-edges]">
-            <div className="mx-auto max-w-[1100px] px-6 pt-1 pb-8">
+            <div className="mx-auto max-w-[1100px] px-6 pt-1 pb-8 lg:pt-0">
                 {/* on wide screens the search row lives in the header */}
                 <div className="flex gap-2 items-center justify-center w-full mb-5 lg:hidden">
                     <div className="h-9 flex-1 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
@@ -45,7 +45,7 @@ function LaptopsSkeleton() {
                     <div className="h-9 w-24 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
                     <div className="h-9 w-9 bg-black/5 dark:bg-white/5 rounded animate-pulse"></div>
                 </div>
-                <div className="h-[560px] lg:mt-1 bg-black/5 dark:bg-white/5 rounded-2xl border border-white/10 animate-pulse"></div>
+                <div className="h-[560px] bg-black/5 dark:bg-white/5 rounded-2xl border border-white/10 animate-pulse"></div>
             </div>
         </div>
     );

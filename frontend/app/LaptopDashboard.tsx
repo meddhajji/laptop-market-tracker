@@ -239,7 +239,7 @@ export default function LaptopDashboard({
 
     return (
         <div className="h-full overflow-y-auto custom-scrollbar border-none outline-none lg:[scrollbar-gutter:stable_both-edges]">
-            <div className="mx-auto max-w-[1100px] px-6 pt-1 pb-8">
+            <div className="mx-auto max-w-[1100px] px-6 pt-1 pb-8 lg:pt-0">
                 <p className="mb-2 text-center text-sm text-muted-foreground sm:hidden">{total.toLocaleString("en-US")} laptops for sale</p>
 
                 {/* Search, sort, filters and the count. On wide screens the row is laid over
@@ -317,7 +317,7 @@ export default function LaptopDashboard({
                 </div>
 
                 {/* data table */}
-                <div className="mt-5 lg:mt-1">
+                <div className="mt-5 lg:mt-0">
                     <LaptopTable
                         laptops={laptops}
                         loading={isPending}
