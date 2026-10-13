@@ -687,7 +687,7 @@ export default function AssistantPage() {
           if (event.target === event.currentTarget) userScrolledRef.current = true;
         }}
         onTouchMove={() => { userScrolledRef.current = true; }}
-        className="h-full overflow-y-scroll overflow-x-hidden custom-scrollbar"
+        className="h-full overflow-y-scroll overflow-x-hidden custom-scrollbar [scrollbar-gutter:stable_both-edges]"
       >
         {/* Messages fade out under the header instead of being cut by it */}
         <div ref={titleRef} className="pointer-events-none sticky top-0 z-30 h-3">
@@ -697,7 +697,7 @@ export default function AssistantPage() {
         <div className="mx-auto max-w-[1100px] px-6 pb-8">
           <main className="relative flex flex-col" suppressHydrationWarning>
             {!hasMessages ? (
-              <div className="flex flex-1 items-center justify-center px-4 pb-44 pt-14">
+              <div className="flex min-h-[calc(100dvh-6.25rem)] items-center justify-center px-4 pb-[4.5rem]">
                 <div className="w-full max-w-[900px] text-center">
                   <h2 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">Find your laptop</h2>
                   <p className="mx-auto mt-3 max-w-xl text-[14px] leading-6 text-muted-foreground">
