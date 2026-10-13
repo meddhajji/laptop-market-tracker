@@ -697,7 +697,7 @@ export default function AssistantPage() {
         <div className="mx-auto max-w-[1100px] px-6 pb-8">
           <main className="relative flex flex-col" suppressHydrationWarning>
             {!hasMessages ? (
-              <div className="flex min-h-[calc(100dvh-6.25rem)] items-center justify-center px-4 pb-[4.5rem]">
+              <div className="flex min-h-[calc(100dvh-6.5rem)] items-center justify-center px-4 pb-[4.5rem]">
                 <div className="w-full max-w-[900px] text-center">
                   <h2 className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">Find your laptop</h2>
                   <p className="mx-auto mt-3 max-w-xl text-[14px] leading-6 text-muted-foreground">
