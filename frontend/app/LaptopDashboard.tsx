@@ -72,7 +72,9 @@ const emptyFilters: Filters = {
     upload_date: "Any",
 };
 
-const DEFAULT_VISIBLE = new Set(ALL_COLUMNS.filter((c) => c.defaultOn).map((c) => c.key));
+// Every column starts visible: the first screen looks the same, and the rest is a
+// sideways scroll away instead of hidden behind the column menu.
+const DEFAULT_VISIBLE = new Set(ALL_COLUMNS.map((c) => c.key));
 
 function parseFiltersFromURL(params: URLSearchParams): Filters {
     return {

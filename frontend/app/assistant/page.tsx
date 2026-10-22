@@ -54,7 +54,8 @@ type ChatMessage = UIMessage & {
 };
 
 const CORE_COLS = new Set(["score", "brand", "model", "price", "link"]);
-const DEFAULT_VISIBLE = new Set(ALL_COLUMNS.filter((column) => column.defaultOn).map((column) => column.key));
+// Every column starts visible, as on the dashboard: the rest is a sideways scroll away
+const DEFAULT_VISIBLE = new Set(ALL_COLUMNS.map((column) => column.key));
 const LANE_CLASS = "mx-auto w-full max-w-[900px] px-4 sm:px-6";
 const CONTENT_LANE_CLASS = "mx-auto w-full max-w-[900px] pl-5 pr-3 sm:pl-7 sm:pr-5";
 
